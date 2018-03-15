@@ -90,11 +90,10 @@ def sigmoid(input, derivative=False):
 def relu(input, derivative=False):
 	res = input
 	if not derivative:
-		res[res<=0] = 0
+		return input * (input > 0)
 	else:
-		res = np.greater(res, 0).astype(int)
+		return 1.0 * (input > 0)
 	
-	return np.array(res)
 
 
 def tanh(input, derivative=False):

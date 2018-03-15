@@ -131,10 +131,9 @@ class GAN(object):
 				self.backprop_gen(g_loss, fake_img)
 				self.backprop_gen(g_loss, fake_img)
 
-				print g_loss
 				img_tile(fake_img)
 
-				print "Epoch [%d] Step [%d] G Loss:%.2f D Loss:%.2f"%(epoch, idx, np.sum(g_loss)/self.batch_size, np.sum(d_loss)/self.batch_size)
+				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f"%(epoch, idx, np.sum(g_loss)/self.batch_size, np.sum(d_loss)/self.batch_size)
 
 
 gan = GAN()

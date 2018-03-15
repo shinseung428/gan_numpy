@@ -16,25 +16,25 @@ class GAN(object):
 
 
 		#init generator weights
-		self.g_W0 = np.random.uniform(-1,1,(100,150))
-		self.g_b0 = np.random.uniform(-1,1,(150))
+		self.g_W0 = np.random.randn(100,150)
+		self.g_b0 = np.random.randn(150)
 
-		self.g_W1 = np.random.uniform(-1,1,(150,300))
-		self.g_b1 = np.random.uniform(-1,1,(300))
+		self.g_W1 = np.random.randn(150,300)
+		self.g_b1 = np.random.randn(300)
 		
-		self.g_W2 = np.random.uniform(-1,1,(300,28*28))
-		self.g_b2 = np.random.uniform(-1,1,(28*28))
+		self.g_W2 = np.random.randn(300,28*28)
+		self.g_b2 = np.random.randn(28*28)
 		
 
 		#init discriminator weights
-		self.d_W0 = np.random.uniform(-1,1,(28*28,300))
-		self.d_b0 = np.random.uniform(-1,1,(300))
+		self.d_W0 = np.random.randn(28*28,300)
+		self.d_b0 = np.random.randn(300)
 
-		self.d_W1 = np.random.uniform(-1,1,(300,150))
-		self.d_b1 = np.random.uniform(-1,1,(150))
+		self.d_W1 = np.random.randn(300,150)
+		self.d_b1 = np.random.randn(150)
 		
-		self.d_W2 = np.random.uniform(-1,1,(150,1))
-		self.d_b2 = np.random.uniform(-1,1,(1))
+		self.d_W2 = np.random.randn(150,1)
+		self.d_b2 = np.random.randn(1)
 
 
 		#Adam Optimizer Var

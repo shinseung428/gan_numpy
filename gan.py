@@ -9,7 +9,7 @@ class GAN(object):
 	def __init__(self):
 		self.batch_size = 64
 		self.epochs = 25
-		self.learning_rate = 0.0001
+		self.learning_rate = 0.00001
 
 
 		#init generator weights
@@ -37,10 +37,10 @@ class GAN(object):
 		self.d_input = np.reshape(img, (self.batch_size, -1))
 
 		self.d_h0 = np.matmul(self.d_input, self.d_W0)# + self.d_b0
-		self.d_h0 = sigmoid(self.d_h0)
+		self.d_h0 = relu(self.d_h0)
 
 		self.d_h1 = np.matmul(self.d_h0, self.d_W1)# + self.d_b1
-		self.d_h1 = sigmoid(self.d_h1)
+		self.d_h1 = relu(self.d_h1)
 
 		self.d_out = np.matmul(self.d_h1, self.d_W2)# + self.d_b2
 
@@ -49,10 +49,10 @@ class GAN(object):
 	def generator(self, z):
 
 		self.g_h0 = np.matmul(z, self.g_W0) + self.g_b0
-		self.g_h0 = sigmoid(self.g_h0)
+		self.g_h0 = relu(self.g_h0)
 
 		self.g_h1 = np.matmul(self.g_h0, self.g_W1)# + self.g_b1
-		self.g_h1 = sigmoid(self.g_h1)
+		self.g_h1 = relu(self.g_h1)
 
 		self.g_h2 = np.matmul(self.g_h1, self.g_W2)# + self.g_b2
 		self.g_out = sigmoid(self.g_h2)
@@ -72,12 +72,12 @@ class GAN(object):
 		self.g_W2 += self.learning_rate*np.matmul(self.g_h1.T, err)	
 
 		err = np.matmul(err, self.g_W2.T)
-		err = err*sigmoid(self.g_h1,derivative=True)
+		err = err*relu(self.g_h1,derivative=True)
 		self.g_W1 += self.learning_rate*np.matmul(self.g_h0.T, err)
 		
 
 		err = np.matmul(err, self.g_W1.T)
-		err = err*sigmoid(self.g_h0,derivative=True)
+		err = err*relu(self.g_h0,derivative=True)
 		self.g_W0 += self.learning_rate*np.matmul(self.z.T, err)
 		
 	# discriminator backpropagation 
@@ -91,12 +91,12 @@ class GAN(object):
 		self.d_W2 += self.learning_rate*np.matmul(self.d_h1.T, err)
 		
 		err = np.matmul(err, self.d_W2.T)
-		err = err*sigmoid(self.d_h1,derivative=True)
+		err = err*relu(self.d_h1,derivative=True)
 		self.d_W1 += self.learning_rate*np.matmul(self.d_h0.T, err)
 		
 
 		err = np.matmul(err, self.d_W1.T)
-		err = err*sigmoid(self.d_h0,derivative=True)
+		err = err*relu(self.d_h0,derivative=True)
 		self.d_W0 += self.learning_rate*np.matmul(self.d_input.T, err)
 		
 

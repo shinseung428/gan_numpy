@@ -8,7 +8,7 @@ class GAN(object):
 	def __init__(self):
 		self.batch_size = 64
 		self.epochs = 25
-		self.learning_rate = 0.0002
+		self.learning_rate = 0.00002
 
 
 		#init generator weights
@@ -79,8 +79,12 @@ class GAN(object):
 		self.g_W0 += self.learning_rate*np.matmul(self.z.T, err)
 		
 	# discriminator backpropagation 
-	def backprop_dis(self, loss, output):
-		err = loss*sigmoid(output, derivative=True)
+	def backprop_dis(self, logit, output, real=True):
+		if real:
+			logit = -1.0/logit
+		else:
+			logit = 1.0/(1.0-logit)
+		err = logit*sigmoid(output, derivative=True)
 		self.d_W2 += self.learning_rate*np.matmul(self.d_h1.T, err)
 
 		err = np.matmul(err, self.d_W2.T)
@@ -116,20 +120,20 @@ class GAN(object):
 
 				#cross entropy loss using sigmoid output
 				#add epsilon in log to avoid overflow
-				d_loss = -np.log(real_output+epsilon) - np.log(fake_output+epsilon)
+				d_loss = -np.log(real_output+epsilon) - np.log(1 - fake_output+epsilon)
 
-				g_loss = -real_label*np.log(fake_output+epsilon)
+				g_loss = -np.log(fake_output+epsilon)
 
 				#train discriminator
 				#one for fake input, another for real input(?)
-				self.backprop_dis(d_loss, fake_output)
-				self.backprop_dis(d_loss, real_output)
+				self.backprop_dis(fake_logits, fake_output, real=False)
+				self.backprop_dis(real_logits, real_output)
 				
 				#train generator twice
 				self.backprop_gen(g_loss, fake_img)
 				self.backprop_gen(g_loss, fake_img)
 
-				# img_tile(fake_img)
+				img_tile(fake_img)
 
 				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f"%(epoch, idx, np.sum(g_loss)/self.batch_size, np.sum(d_loss)/self.batch_size)
 

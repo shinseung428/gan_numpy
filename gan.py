@@ -6,9 +6,9 @@ from activations import *
 class GAN(object):
 
 	def __init__(self):
-		self.batch_size = 32
+		self.batch_size = 64
 		self.epochs = 25
-		self.learning_rate = 0.001
+		self.learning_rate = 0.0002
 
 
 		#init generator weights
@@ -116,11 +116,11 @@ class GAN(object):
 
 				#cross entropy loss using sigmoid output
 				#add epsilon in log to avoid overflow
-				real_loss = -real_label*np.log(real_output+epsilon) + (1-real_label)*np.log(1-real_output+epsilon)
-				fake_loss = -fake_label*np.log(fake_output+epsilon) + (1-fake_label)*np.log(1-fake_output+epsilon)
+				real_loss = -real_label*np.log(real_output+epsilon) - (1-real_label)*np.log(1-real_output+epsilon)
+				fake_loss = -fake_label*np.log(fake_output+epsilon) - (1-fake_label)*np.log(1-fake_output+epsilon)
 				d_loss = real_loss + fake_loss
 
-				g_loss = -real_label*np.log(fake_output+epsilon) + (1-real_label)*np.log(1-fake_output+epsilon)
+				g_loss = -real_label*np.log(fake_output+epsilon) - (1-real_label)*np.log(1-fake_output+epsilon)
 
 				#train discriminator
 				#one for fake input, another for real input(?)
@@ -131,8 +131,8 @@ class GAN(object):
 				self.backprop_gen(g_loss, fake_img)
 				self.backprop_gen(g_loss, fake_img)
 
-				cv2.imshow("fake",fake_img[0])
-				cv2.waitKey(1)
+				print g_loss
+				img_tile(fake_img)
 
 				print "Epoch [%d] Step [%d] G Loss:%.2f D Loss:%.2f"%(epoch, idx, np.sum(g_loss)/self.batch_size, np.sum(d_loss)/self.batch_size)
 

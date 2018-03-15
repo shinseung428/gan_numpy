@@ -35,25 +35,25 @@ class GAN(object):
 	def discriminator(self, img):
 		self.d_input = np.reshape(img, (self.batch_size, -1))
 
-		self.d_h0 = np.matmul(self.d_input, self.d_W0)# + self.d_b0
-		self.d_h0 = sigmoid(self.d_h0)
+		self.d_h0 = np.matmul(self.d_input, self.d_W0) + self.d_b0
+		self.d_h0 = relu(self.d_h0)
 
-		self.d_h1 = np.matmul(self.d_h0, self.d_W1)# + self.d_b1
-		self.d_h1 = sigmoid(self.d_h1)
+		self.d_h1 = np.matmul(self.d_h0, self.d_W1) + self.d_b1
+		self.d_h1 = relu(self.d_h1)
 
-		self.d_out = np.matmul(self.d_h1, self.d_W2)# + self.d_b2
+		self.d_out = np.matmul(self.d_h1, self.d_W2) + self.d_b2
 
 		return self.d_out, sigmoid(self.d_out)
 
 	def generator(self, z):
 
-		self.g_h0 = np.matmul(z, self.g_W0)# + self.g_b0
-		self.g_h0 = sigmoid(self.g_h0)
+		self.g_h0 = np.matmul(z, self.g_W0) + self.g_b0
+		self.g_h0 = relu(self.g_h0)
 
-		self.g_h1 = np.matmul(self.g_h0, self.g_W1)# + self.g_b1
-		self.g_h1 = sigmoid(self.g_h1)
+		self.g_h1 = np.matmul(self.g_h0, self.g_W1) + self.g_b1
+		self.g_h1 = relu(self.g_h1)
 
-		self.g_h2 = np.matmul(self.g_h1, self.g_W2)# + self.g_b2
+		self.g_h2 = np.matmul(self.g_h1, self.g_W2) + self.g_b2
 		self.g_h2 = sigmoid(self.g_h2)
 
 		self.g_out = np.reshape(self.g_h2, (self.batch_size, 28, 28))
@@ -61,21 +61,21 @@ class GAN(object):
 		return self.g_out
 
 	# generator backpropagation
-	def backprop_gen(self, loss, output):
+	def backprop_gen(self, logit, output):
 		output = np.reshape(output, (self.batch_size, -1))
-		loss = np.tile(loss, [1, output.shape[-1]])
+		logit = np.tile(logit, [1, output.shape[-1]])
+		logit = -1.0/logit
 
-		err = loss*sigmoid(output, derivative=True)
-		self.g_W2 += self.learning_rate*np.matmul(self.g_h1.T, err)
-		
+		err = logit*sigmoid(output, derivative=True)
+		self.g_W2 += self.learning_rate*np.matmul(self.g_h1.T, err)	
 
 		err = np.matmul(err, self.g_W2.T)
-		err = err*sigmoid(self.g_h1,derivative=True)
+		err = err*relu(self.g_h1,derivative=True)
 		self.g_W1 += self.learning_rate*np.matmul(self.g_h0.T, err)
 		
 
 		err = np.matmul(err, self.g_W1.T)
-		err = err*sigmoid(self.g_h0,derivative=True)
+		err = err*relu(self.g_h0,derivative=True)
 		self.g_W0 += self.learning_rate*np.matmul(self.z.T, err)
 		
 	# discriminator backpropagation 
@@ -88,11 +88,11 @@ class GAN(object):
 		self.d_W2 += self.learning_rate*np.matmul(self.d_h1.T, err)
 
 		err = np.matmul(err, self.d_W2.T)
-		err = err*sigmoid(self.d_h1,derivative=True)
+		err = err*relu(self.d_h1,derivative=True)
 		self.d_W1 += self.learning_rate*np.matmul(self.d_h0.T, err)
 		
 		err = np.matmul(err, self.d_W1.T)
-		err = err*sigmoid(self.d_h0,derivative=True)
+		err = err*relu(self.d_h0,derivative=True)
 		self.d_W0 += self.learning_rate*np.matmul(self.d_input.T, err)
 		
 
@@ -120,7 +120,7 @@ class GAN(object):
 
 				#cross entropy loss using sigmoid output
 				#add epsilon in log to avoid overflow
-				d_loss = -np.log(real_output+epsilon) - np.log(1 - fake_output+epsilon)
+				d_loss = -np.log(real_output+epsilon) + np.log(1 - fake_output+epsilon)
 
 				g_loss = -np.log(fake_output+epsilon)
 
@@ -130,8 +130,8 @@ class GAN(object):
 				self.backprop_dis(real_logits, real_output)
 				
 				#train generator twice
-				self.backprop_gen(g_loss, fake_img)
-				self.backprop_gen(g_loss, fake_img)
+				self.backprop_gen(fake_logits, fake_img)
+				self.backprop_gen(fake_logits, fake_img)
 
 				img_tile(fake_img)
 

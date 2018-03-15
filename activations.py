@@ -42,7 +42,7 @@ def img_tile(imgs, aspect_ratio=1.0, tile_shape=None, border=1, border_color=0):
 			tile_img[yoff:yoff+img_shape[0], xoff:xoff+img_shape[1], ...] = img
 
 	cv2.imshow("tile", tile_img)
-	cv2.waitKey(1000)
+	cv2.waitKey(1)
 
 def mnist_reader():
 	def one_hot(label, output_dim):

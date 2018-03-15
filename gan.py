@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 
 from activations import *
 
@@ -32,65 +33,108 @@ class GAN(object):
 		self.d_b2 = np.random.random((1)) * 2 - 1
 
 	def discriminator(self, img):
-		flattened = np.reshape(img, (self.batch_size, -1))
+		self.d_input = np.reshape(img, (self.batch_size, -1))
 
-		self.h0 = np.matmul(flattened, self.d_W0) + self.d_b0
-		# self.h0 = relu(self.h0)
+		self.d_h0 = np.matmul(self.d_input, self.d_W0)# + self.d_b0
+		self.d_h0 = sigmoid(self.d_h0)
 
-		self.h1 = np.matmul(self.h0, self.d_W1) + self.d_b1
-		# self.h1 = relu(self.h1)
+		self.d_h1 = np.matmul(self.d_h0, self.d_W1)# + self.d_b1
+		self.d_h1 = sigmoid(self.d_h1)
 
-		self.h2 = np.matmul(self.h1, self.d_W2) + self.d_b2
+		self.d_out = np.matmul(self.d_h1, self.d_W2)# + self.d_b2
 
-		return self.h2, sigmoid(self.h2)
+		return self.d_out, sigmoid(self.d_out)
 
 	def generator(self, z):
 
-		self.h0 = np.matmul(z, self.g_W0) + self.g_b0
-		# self.h0 = relu(self.h0)
+		self.g_h0 = np.matmul(z, self.g_W0)# + self.g_b0
+		self.g_h0 = sigmoid(self.g_h0)
 
-		self.h1 = np.matmul(self.h0, self.g_W1) + self.g_b1
-		# self.h1 = relu(self.h1)
+		self.g_h1 = np.matmul(self.g_h0, self.g_W1)# + self.g_b1
+		self.g_h1 = sigmoid(self.g_h1)
 
-		self.h2 = np.matmul(self.h1, self.g_W2) + self.g_b2
-		self.h2 = tanh(self.h2)
+		self.g_h2 = np.matmul(self.g_h1, self.g_W2)# + self.g_b2
+		self.g_h2 = sigmoid(self.g_h2)
 
-		self.out = np.reshape(self.h2, (self.batch_size, 28, 28))
+		self.g_out = np.reshape(self.g_h2, (self.batch_size, 28, 28))
 		
-		return self.out
+		return self.g_out
 
+	# generator backpropagation
+	def backprop_gen(self, loss, output):
+		output = np.reshape(output, (self.batch_size, -1))
+		loss = np.tile(loss, [1, output.shape[-1]])
+
+		err = loss*sigmoid(output, derivative=True)
+		self.g_W2 += self.learning_rate*np.matmul(self.g_h1.T, err)
+		
+
+		err = np.matmul(err, self.g_W2.T)
+		err = err*sigmoid(self.g_h1,derivative=True)
+		self.g_W1 += self.learning_rate*np.matmul(self.g_h0.T, err)
+		
+
+		err = np.matmul(err, self.g_W1.T)
+		err = err*sigmoid(self.g_h0,derivative=True)
+		self.g_W0 += self.learning_rate*np.matmul(self.z.T, err)
+		
+	# discriminator backpropagation 
+	def backprop_dis(self, loss, output):
+		err = loss*sigmoid(output, derivative=True)
+		self.d_W2 += self.learning_rate*np.matmul(self.d_h1.T, err)
+
+		err = np.matmul(err, self.d_W2.T)
+		err = err*sigmoid(self.d_h1,derivative=True)
+		self.d_W1 += self.learning_rate*np.matmul(self.d_h0.T, err)
+		
+		err = np.matmul(err, self.d_W1.T)
+		err = err*sigmoid(self.d_h0,derivative=True)
+		self.d_W0 += self.learning_rate*np.matmul(self.d_input.T, err)
+		
 
 	def train(self):
-		#we don't need labels
+		epsilon = 10e-4
+		#we don't need labels.
+		#just read images
 		trainX, _, train_size = mnist_reader()
 		
 		batch_idx = train_size//self.batch_size
-		for idx in range(batch_idx):
-			train_batch = trainX[idx*self.batch_size:idx*self.batch_size + self.batch_size]
+		for epoch in range(self.epochs):
+			for idx in range(batch_idx):
+				#prepare batch and input vector z
+				train_batch = trainX[idx*self.batch_size:idx*self.batch_size + self.batch_size]
+				self.z = np.random.random([self.batch_size,100]) * 2 - 1
 
-			z = np.random.random([self.batch_size,100]) * 2 - 1
+				#forward pass
+				fake_img = self.generator(self.z)
+				real_logits, real_output = self.discriminator(train_batch)
+				fake_logits, fake_output = self.discriminator(fake_img)
 
-			#forward pass
-			fake_img = self.generator(z)
-			real_logits, real_output = self.discriminator(train_batch)
-			fake_logits, fake_output = self.discriminator(fake_img)
+				#calculate loss
+				real_label = np.ones((self.batch_size, 1), dtype=np.float32)
+				fake_label = np.zeros((self.batch_size, 1), dtype=np.float32)
 
-			#calculate loss
-			real_label = np.ones((self.batch_size, 1))
-			fake_label = np.zeros((self.batch_size, 1))
+				#cross entropy loss using sigmoid output
+				#add epsilon in log to avoid overflow
+				real_loss = -real_label*np.log(real_output+epsilon) + (1-real_label)*np.log(1-real_output+epsilon)
+				fake_loss = -fake_label*np.log(fake_output+epsilon) + (1-fake_label)*np.log(1-fake_output+epsilon)
+				d_loss = real_loss + fake_loss
 
-			#cross entropy loss using sigmoid output
-			real_loss = -(real_label*np.log(real_output) + (1-real_label)*np.log(1-real_output))
-			fake_loss = -(fake_label*np.log(fake_output) + (1-fake_label)*np.log(1-fake_output))
+				g_loss = -real_label*np.log(fake_output+epsilon) + (1-real_label)*np.log(1-fake_output+epsilon)
 
-			# print "Real:", np.sum(real_loss)/self.batch_size
-			# print "Fake:", np.sum(fake_loss)/self.batch_size
-			
-			#train discriminator
+				#train discriminator
+				#one for fake input, another for real input(?)
+				self.backprop_dis(d_loss, fake_output)
+				self.backprop_dis(d_loss, real_output)
+				
+				#train generator twice
+				self.backprop_gen(g_loss, fake_img)
+				self.backprop_gen(g_loss, fake_img)
 
+				cv2.imshow("fake",fake_img[0])
+				cv2.waitKey(1)
 
-			#train generator
-
+				print "Epoch [%d] Step [%d] G Loss:%.2f D Loss:%.2f"%(epoch, idx, np.sum(g_loss)/self.batch_size, np.sum(d_loss)/self.batch_size)
 
 
 gan = GAN()

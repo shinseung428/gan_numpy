@@ -42,13 +42,14 @@ def sigmoid(input, derivative=False):
 	if derivative:
 		return res*(1-res)
 
-	return res
+	return np.clip(res, 0.001, np.inf)
 
 def relu(input, derivative=False):
-	res = []
-	for batch in input:
-		batch[batch<=0] = 0
-		res.append(batch)
+	res = input
+	if not derivative:
+		res[res<=0] = 0
+	else:
+		res = np.greater(res, 0).astype(int)
 	
 	return np.array(res)
 

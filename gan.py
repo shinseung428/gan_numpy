@@ -116,11 +116,9 @@ class GAN(object):
 
 				#cross entropy loss using sigmoid output
 				#add epsilon in log to avoid overflow
-				real_loss = -real_label*np.log(real_output+epsilon) - (1-real_label)*np.log(1-real_output+epsilon)
-				fake_loss = -fake_label*np.log(fake_output+epsilon) - (1-fake_label)*np.log(1-fake_output+epsilon)
-				d_loss = real_loss + fake_loss
+				d_loss = -np.log(real_output+epsilon) - np.log(fake_output+epsilon)
 
-				g_loss = -real_label*np.log(fake_output+epsilon) - (1-real_label)*np.log(1-fake_output+epsilon)
+				g_loss = -real_label*np.log(fake_output+epsilon)
 
 				#train discriminator
 				#one for fake input, another for real input(?)
@@ -131,7 +129,7 @@ class GAN(object):
 				self.backprop_gen(g_loss, fake_img)
 				self.backprop_gen(g_loss, fake_img)
 
-				img_tile(fake_img)
+				# img_tile(fake_img)
 
 				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f"%(epoch, idx, np.sum(g_loss)/self.batch_size, np.sum(d_loss)/self.batch_size)
 

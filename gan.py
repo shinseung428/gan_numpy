@@ -35,13 +35,13 @@ class GAN(object):
 	def discriminator(self, img):
 		self.d_input = np.reshape(img, (self.batch_size, -1))
 
-		self.d_h0 = np.matmul(self.d_input, self.d_W0) + self.d_b0
+		self.d_h0 = np.matmul(self.d_input, self.d_W0)# + self.d_b0
 		self.d_h0 = relu(self.d_h0)
 
-		self.d_h1 = np.matmul(self.d_h0, self.d_W1) + self.d_b1
+		self.d_h1 = np.matmul(self.d_h0, self.d_W1)# + self.d_b1
 		self.d_h1 = relu(self.d_h1)
 
-		self.d_out = np.matmul(self.d_h1, self.d_W2) + self.d_b2
+		self.d_out = np.matmul(self.d_h1, self.d_W2)# + self.d_b2
 
 		return self.d_out, sigmoid(self.d_out)
 
@@ -50,15 +50,15 @@ class GAN(object):
 		self.g_h0 = np.matmul(z, self.g_W0) + self.g_b0
 		self.g_h0 = relu(self.g_h0)
 
-		self.g_h1 = np.matmul(self.g_h0, self.g_W1) + self.g_b1
+		self.g_h1 = np.matmul(self.g_h0, self.g_W1)# + self.g_b1
 		self.g_h1 = relu(self.g_h1)
 
-		self.g_h2 = np.matmul(self.g_h1, self.g_W2) + self.g_b2
-		self.g_h2 = sigmoid(self.g_h2)
+		self.g_h2 = np.matmul(self.g_h1, self.g_W2)# + self.g_b2
+		self.g_out = sigmoid(self.g_h2)
 
 		self.g_out = np.reshape(self.g_h2, (self.batch_size, 28, 28))
 		
-		return self.g_out
+		return self.g_h2, self.g_out
 
 	# generator backpropagation
 	def backprop_gen(self, logit, output):
@@ -84,13 +84,15 @@ class GAN(object):
 			logit = -1.0/logit
 		else:
 			logit = 1.0/(1.0-logit)
+
 		err = logit*sigmoid(output, derivative=True)
 		self.d_W2 += self.learning_rate*np.matmul(self.d_h1.T, err)
-
+		
 		err = np.matmul(err, self.d_W2.T)
 		err = err*relu(self.d_h1,derivative=True)
 		self.d_W1 += self.learning_rate*np.matmul(self.d_h0.T, err)
 		
+
 		err = np.matmul(err, self.d_W1.T)
 		err = err*relu(self.d_h0,derivative=True)
 		self.d_W0 += self.learning_rate*np.matmul(self.d_input.T, err)
@@ -107,12 +109,12 @@ class GAN(object):
 			for idx in range(batch_idx):
 				#prepare batch and input vector z
 				train_batch = trainX[idx*self.batch_size:idx*self.batch_size + self.batch_size]
-				self.z = np.random.random([self.batch_size,100]) * 2 - 1
+				self.z = np.random.uniform(-1,1,[self.batch_size,100])
 
 				#forward pass
-				fake_img = self.generator(self.z)
-				real_logits, real_output = self.discriminator(train_batch)
-				fake_logits, fake_output = self.discriminator(fake_img)
+				g_logits, fake_img = self.generator(self.z)
+				d_real_logits, d_real_output = self.discriminator(train_batch)
+				d_fake_logits, d_fake_output = self.discriminator(fake_img)
 
 				#calculate loss
 				real_label = np.ones((self.batch_size, 1), dtype=np.float32)
@@ -120,18 +122,18 @@ class GAN(object):
 
 				#cross entropy loss using sigmoid output
 				#add epsilon in log to avoid overflow
-				d_loss = -np.log(real_output+epsilon) + np.log(1 - fake_output+epsilon)
+				d_loss = -np.log(d_real_output+epsilon) + np.log(1 - d_fake_output+epsilon)
 
-				g_loss = -np.log(fake_output+epsilon)
+				g_loss = -np.log(d_fake_output+epsilon)
 
 				#train discriminator
 				#one for fake input, another for real input(?)
-				self.backprop_dis(fake_logits, fake_output, real=False)
-				self.backprop_dis(real_logits, real_output)
+				self.backprop_dis(d_fake_logits, d_fake_output, real=False)
+				self.backprop_dis(d_real_logits, d_real_output)
 				
 				#train generator twice
-				self.backprop_gen(fake_logits, fake_img)
-				self.backprop_gen(fake_logits, fake_img)
+				self.backprop_gen(d_fake_logits, fake_img)
+				self.backprop_gen(d_fake_logits, fake_img)
 
 				img_tile(fake_img)
 

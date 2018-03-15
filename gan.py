@@ -83,8 +83,6 @@ class GAN(object):
 			real_loss = -(real_label*np.log(real_output) + (1-real_label)*np.log(1-real_output))
 			fake_loss = -(fake_label*np.log(fake_output) + (1-fake_label)*np.log(1-fake_output))
 
-			print real_output
-			
 			# print "Real:", np.sum(real_loss)/self.batch_size
 			# print "Fake:", np.sum(fake_loss)/self.batch_size
 			

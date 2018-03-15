@@ -40,9 +40,9 @@ def sigmoid(input, derivative=False):
 	res = 1/(1+np.exp(-input))
 
 	if derivative:
-		return np.clip(res*(1-res), -0.01, 0.01)
+		return res*(1-res)
 
-	return np.clip(res, -0.01, 0.01)
+	return res
 
 def relu(input, derivative=False):
 	res = []
@@ -54,7 +54,7 @@ def relu(input, derivative=False):
 
 
 def tanh(input, derivative=False):
-	res = np.clip(np.tanh(input), -0.001, 0.001)
+	res = np.tanh(input)
 	return res
 
 

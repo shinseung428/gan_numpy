@@ -3,43 +3,44 @@ import cv2
 
 from activations import *
 
+epsilon = 10e-4
 class GAN(object):
 
 	def __init__(self):
 		self.batch_size = 64
 		self.epochs = 25
-		self.learning_rate = 0.00002
+		self.learning_rate = 0.0001
 
 
 		#init generator weights
-		self.g_W0 = np.random.random((100,150)) * 2 - 1
-		self.g_b0 = np.random.random((150)) * 2 - 1
+		self.g_W0 = np.random.uniform(-1,1,(100,150))
+		self.g_b0 = np.random.uniform(-1,1,(150))
 
-		self.g_W1 = np.random.random((150,300)) * 2 - 1
-		self.g_b1 = np.random.random((300)) * 2 - 1
+		self.g_W1 = np.random.uniform(-1,1,(150,300))
+		self.g_b1 = np.random.uniform(-1,1,(300))
 		
-		self.g_W2 = np.random.random((300,28*28)) * 2 - 1
-		self.g_b2 = np.random.random((28*28)) * 2 - 1
+		self.g_W2 = np.random.uniform(-1,1,(300,28*28))
+		self.g_b2 = np.random.uniform(-1,1,(28*28))
 		
 
 		#init discriminator weights
-		self.d_W0 = np.random.random((28*28,300)) * 2 - 1
-		self.d_b0 = np.random.random((300)) * 2 - 1
+		self.d_W0 = np.random.uniform(-1,1,(28*28,300))
+		self.d_b0 = np.random.uniform(-1,1,(300))
 
-		self.d_W1 = np.random.random((300,150)) * 2 - 1
-		self.d_b1 = np.random.random((150)) * 2 - 1
+		self.d_W1 = np.random.uniform(-1,1,(300,150))
+		self.d_b1 = np.random.uniform(-1,1,(150))
 		
-		self.d_W2 = np.random.random((150,1)) * 2 - 1
-		self.d_b2 = np.random.random((1)) * 2 - 1
+		self.d_W2 = np.random.uniform(-1,1,(150,1))
+		self.d_b2 = np.random.uniform(-1,1,(1))
 
 	def discriminator(self, img):
 		self.d_input = np.reshape(img, (self.batch_size, -1))
 
 		self.d_h0 = np.matmul(self.d_input, self.d_W0)# + self.d_b0
-		self.d_h0 = relu(self.d_h0)
+		self.d_h0 = sigmoid(self.d_h0)
 
 		self.d_h1 = np.matmul(self.d_h0, self.d_W1)# + self.d_b1
-		self.d_h1 = relu(self.d_h1)
+		self.d_h1 = sigmoid(self.d_h1)
 
 		self.d_out = np.matmul(self.d_h1, self.d_W2)# + self.d_b2
 
@@ -48,10 +49,10 @@ class GAN(object):
 	def generator(self, z):
 
 		self.g_h0 = np.matmul(z, self.g_W0) + self.g_b0
-		self.g_h0 = relu(self.g_h0)
+		self.g_h0 = sigmoid(self.g_h0)
 
 		self.g_h1 = np.matmul(self.g_h0, self.g_W1)# + self.g_b1
-		self.g_h1 = relu(self.g_h1)
+		self.g_h1 = sigmoid(self.g_h1)
 
 		self.g_h2 = np.matmul(self.g_h1, self.g_W2)# + self.g_b2
 		self.g_out = sigmoid(self.g_h2)
@@ -63,43 +64,44 @@ class GAN(object):
 	# generator backpropagation
 	def backprop_gen(self, logit, output):
 		output = np.reshape(output, (self.batch_size, -1))
-		logit = np.tile(logit, [1, output.shape[-1]])
-		logit = -1.0/logit
+		output = -1.0/output
 
-		err = logit*sigmoid(output, derivative=True)
+		logit = np.tile(logit, [1, output.shape[-1]])
+
+		err = output*sigmoid(logit, derivative=True)
 		self.g_W2 += self.learning_rate*np.matmul(self.g_h1.T, err)	
 
 		err = np.matmul(err, self.g_W2.T)
-		err = err*relu(self.g_h1,derivative=True)
+		err = err*sigmoid(self.g_h1,derivative=True)
 		self.g_W1 += self.learning_rate*np.matmul(self.g_h0.T, err)
 		
 
 		err = np.matmul(err, self.g_W1.T)
-		err = err*relu(self.g_h0,derivative=True)
+		err = err*sigmoid(self.g_h0,derivative=True)
 		self.g_W0 += self.learning_rate*np.matmul(self.z.T, err)
 		
 	# discriminator backpropagation 
 	def backprop_dis(self, logit, output, real=True):
 		if real:
-			logit = -1.0/logit
+			output = -1.0/output
 		else:
-			logit = 1.0/(1.0-logit)
+			output = 1.0/(1.0-output+epsilon)
 
-		err = logit*sigmoid(output, derivative=True)
+		err = output*sigmoid(logit, derivative=True)
 		self.d_W2 += self.learning_rate*np.matmul(self.d_h1.T, err)
 		
 		err = np.matmul(err, self.d_W2.T)
-		err = err*relu(self.d_h1,derivative=True)
+		err = err*sigmoid(self.d_h1,derivative=True)
 		self.d_W1 += self.learning_rate*np.matmul(self.d_h0.T, err)
 		
 
 		err = np.matmul(err, self.d_W1.T)
-		err = err*relu(self.d_h0,derivative=True)
+		err = err*sigmoid(self.d_h0,derivative=True)
 		self.d_W0 += self.learning_rate*np.matmul(self.d_input.T, err)
 		
 
 	def train(self):
-		epsilon = 10e-4
+		
 		#we don't need labels.
 		#just read images
 		trainX, _, train_size = mnist_reader()
@@ -127,7 +129,7 @@ class GAN(object):
 				g_loss = -np.log(d_fake_output+epsilon)
 
 				#train discriminator
-				#one for fake input, another for real input(?)
+				#one for fake input, another for real input
 				self.backprop_dis(d_fake_logits, d_fake_output, real=False)
 				self.backprop_dis(d_real_logits, d_real_output)
 				

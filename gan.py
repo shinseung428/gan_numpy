@@ -121,11 +121,11 @@ class GAN(object):
 		grad_fake_W0 = fake_input.T.dot(loss_deriv)
 		grad_fake_b0 = loss_deriv		
 		
-
+		
 		#Reached the end of the generator 
 
 		#Calculate gradients
-		loss_deriv = loss_deriv.dot(self.g_W2)
+		loss_deriv = loss_deriv.dot(self.d_W0.T)
 		loss_deriv = loss_deriv*tanh(self.g_h2, derivative=True)#*tanh(output, loss_derivative=True)
 		# grad_W2 = np.matmul(self.g_h1.T, loss_deriv)
 		grad_W2 = self.g_h1.T.dot(loss_deriv)

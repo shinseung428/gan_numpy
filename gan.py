@@ -90,6 +90,7 @@ class GAN(object):
 	def backprop_gen(self, fake_logit, fake_sig_output, fake_input):
 		#logit : sigmoid output from the discriminator D(G(x))
 		
+		#flatten fake image input
 		fake_input = np.reshape(fake_input, (1,-1))
 		
 		#calculate the loss_derivative of the loss term -log(D(G(x)))
@@ -121,24 +122,11 @@ class GAN(object):
 		grad_fake_b0 = loss_deriv		
 		
 
-		#########
-		loss_deriv = loss_deriv.dot(self.g_W2.T)
-		loss_deriv = loss_deriv*tanh(self.g_h1, derivative=True)
-		
-		# grad_fake_W0 = np.matmul(fake_input.T, loss_deriv)
-		# grad_fake_W2 = self.g_h1.T.dot(loss_deriv)
-		# grad_fake_b2 = loss_deriv
-
-		print loss_deriv.shape
-		input("k")
-
-
-
-
 		#Reached the end of the generator 
 
 		#Calculate gradients
-		loss_deriv = d_loss*tanh(self.g_h2, derivative=True)#*tanh(output, loss_derivative=True)
+		loss_deriv = loss_deriv.dot(self.g_W2)
+		loss_deriv = loss_deriv*tanh(self.g_h2, derivative=True)#*tanh(output, loss_derivative=True)
 		# grad_W2 = np.matmul(self.g_h1.T, loss_deriv)
 		grad_W2 = self.g_h1.T.dot(loss_deriv)
 		grad_b2 = loss_deriv	

@@ -306,13 +306,13 @@ class GAN(object):
 
 					res_fakes.append(fake_img)
 
-				total_step += 1
+				
 
 				if total_step%self.checkpoint == 0:
 					img_tile(np.array(res_fakes), self.img_path, epoch, idx)
 
 				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f"%(epoch, idx, g_loss_sum/self.batch_size, d_loss_sum/self.batch_size)
-
+				total_step += 1
 
 
 

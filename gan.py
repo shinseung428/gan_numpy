@@ -10,10 +10,9 @@ beta2 = 0.999
 class GAN(object):
 
 	def __init__(self):
-		self.batch_size = 64
+		self.batch_size = 36
 		self.epochs = 25
 		self.learning_rate = 0.0002
-
 
 		#init generator weights
 		self.g_W0 = np.random.randn(100,150).astype(np.float32) * np.sqrt(2.0/(100))
@@ -100,72 +99,56 @@ class GAN(object):
 
 		#calculate gradients from the end of the discriminator
 		#we calculate them but won't update the discriminator weights
-
 		#fake input gradients
 		loss_deriv = d_loss*sigmoid(fake_logit, derivative=True)
-		# grad_fake_W2 = np.matmul(self.d_h1.T, loss_deriv)
-		grad_fake_W2 = self.d_h1.T.dot(loss_deriv)
-		grad_fake_b2 = loss_deriv
 		
-		# loss_deriv = np.matmul(loss_deriv, self.d_W2.T)
 		loss_deriv = loss_deriv.dot(self.d_W2.T)
 		loss_deriv = loss_deriv*relu(self.d_h1, derivative=True)
-		# grad_fake_W1 = np.matmul(self.d_h0.T, loss_deriv)
-		grad_fake_W1 = self.d_h0.T.dot(loss_deriv)
-		grad_fake_b1 = loss_deriv
 
-		# loss_deriv = np.matmul(loss_deriv, self.d_W1.T)
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
-		loss_deriv = loss_deriv*relu(self.d_h0, derivative=True)
-		# grad_fake_W0 = np.matmul(fake_input.T, loss_deriv)
-		grad_fake_W0 = fake_input.T.dot(loss_deriv)
-		grad_fake_b0 = loss_deriv		
+		loss_deriv = loss_deriv*relu(self.d_h0, derivative=True)		
 		
-		
-		#Reached the end of the generator 
+		loss_deriv = loss_deriv.dot(self.d_W0.T)
+		#Reached the end of the generator
 
 		#Calculate gradients
-		loss_deriv = loss_deriv.dot(self.d_W0.T)
-		loss_deriv = loss_deriv*tanh(self.g_h2, derivative=True)#*tanh(output, loss_derivative=True)
-		# grad_W2 = np.matmul(self.g_h1.T, loss_deriv)
+		loss_deriv = loss_deriv*tanh(self.g_h2, derivative=True)
 		grad_W2 = self.g_h1.T.dot(loss_deriv)
 		grad_b2 = loss_deriv	
 
-		# loss_deriv = np.matmul(loss_deriv, self.g_W2.T)
 		loss_deriv = loss_deriv.dot(self.g_W2.T)
 		loss_deriv = loss_deriv*relu(self.g_h1, derivative=True)
-		# grad_W1 = np.matmul(self.g_h0.T, loss_deriv)
 		grad_W1 = self.g_h0.T.dot(loss_deriv)
 		grad_b1 = loss_deriv		
 
-		# loss_deriv = np.matmul(loss_deriv, self.g_W1.T)
 		loss_deriv = loss_deriv.dot(self.g_W1.T)
 		loss_deriv = loss_deriv*relu(self.g_h0, derivative=True)
-		# grad_W0 = np.matmul(self.z.T, loss_deriv)
 		grad_W0 = self.z.T.dot(loss_deriv)
 		grad_b0 = loss_deriv
 
-		#update weights (Adam)
+		#update weights Adam Optimizer
+		#g_W0
 		self.m4_w = (beta1 * self.m4_w) + (1.0 - beta1) * grad_W2
 		self.v4_w = (beta2 * self.v4_w) + (1.0 - beta2) * (grad_W2 ** 2)
-		
+		#g_b0
 		self.m4_b = (beta1 * self.m4_b) + (1.0 - beta1) * grad_b2
 		self.v4_b = (beta2 * self.v4_b) + (1.0 - beta2) * (grad_b2 ** 2)
 
+		#g_W1
 		self.m5_w = (beta1 * self.m5_w) + (1.0 - beta1) * grad_W1
 		self.v5_w = (beta2 * self.v5_w) + (1.0 - beta2) * (grad_W1 ** 2)
-		
+		#g_b1
 		self.m5_b = (beta1 * self.m5_b) + (1.0 - beta1) * grad_b1
 		self.v5_b = (beta2 * self.v5_b) + (1.0 - beta2) * (grad_b1 ** 2)
 
-
+		#g_W2
 		self.m6_w = (beta1 * self.m6_w) + (1.0 - beta1) * grad_W0
 		self.v6_w = (beta2 * self.v6_w) + (1.0 - beta2) * (grad_W0 ** 2)
-
+		#g_b2
 		self.m6_b = (beta1 * self.m6_b) + (1.0 - beta1) * grad_b0
 		self.v6_b = (beta2 * self.v6_b) + (1.0 - beta2) * (grad_b0 ** 2)
 		
-		
+		#make update
 		self.g_W2 = self.g_W2 - (self.learning_rate/(np.sqrt(self.v4_w / (1.0-beta2)) + epsilon))*(self.m4_w/(1.0-beta1))
 		self.g_W1 = self.g_W1 - (self.learning_rate/(np.sqrt(self.v5_w / (1.0-beta2)) + epsilon))*(self.m5_w/(1.0-beta1))
 		self.g_W0 = self.g_W0 - (self.learning_rate/(np.sqrt(self.v6_w / (1.0-beta2)) + epsilon))*(self.m6_w/(1.0-beta1))
@@ -174,7 +157,7 @@ class GAN(object):
 		self.g_b1 = self.g_b1 - np.reshape((self.learning_rate/(np.sqrt(self.v5_b / (1.0-beta2)) + epsilon))*(self.m5_b/(1.0-beta1)), -1)
 		self.g_b0 = self.g_b0 - np.reshape((self.learning_rate/(np.sqrt(self.v6_b / (1.0-beta2)) + epsilon))*(self.m6_b/(1.0-beta1)), -1)
 
-	# discriminator backpropagation 
+	# discriminator backpropagation
 	def backprop_dis(self, real_logit, real_output, real_input, fake_logit, fake_output, fake_input):
 		# real_logit : real logit value before sigmoid activation function (real input)
 		# real_output : Discriminator output in range 0~1 (real input)
@@ -192,41 +175,32 @@ class GAN(object):
 
 		#real input gradients
 		loss_deriv = d_real_loss*sigmoid(real_logit, derivative=True)
-		# grad_real_W2 = np.matmul(self.d_h1.T, loss_deriv)
 		grad_real_W2 = self.d_h1.T.dot(loss_deriv)
 		grad_real_b2 = loss_deriv 
 
-		# loss_deriv = np.matmul(loss_deriv, self.d_W2.T)
 		loss_deriv = loss_deriv.dot(self.d_W2.T)
 		loss_deriv = loss_deriv*relu(self.d_h1, derivative=True)
-		# grad_real_W1 = np.matmul(self.d_h0.T, loss_deriv)
 		grad_real_W1 = self.d_h0.T.dot(loss_deriv)
 		grad_real_b1 = loss_deriv
 
-		# loss_deriv = np.matmul(loss_deriv, self.d_W1.T)
+
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
 		loss_deriv = loss_deriv*relu(self.d_h0, derivative=True)
-		# grad_real_W0 = np.matmul(real_input.T, loss_deriv)
 		grad_real_W0 = real_input.T.dot(loss_deriv)
 		grad_real_b0 = loss_deriv
 
 		#fake input gradients
 		loss_deriv = d_fake_loss*sigmoid(fake_logit, derivative=True)
-		# grad_fake_W2 = np.matmul(self.d_h1.T, loss_deriv)
 		grad_fake_W2 = self.d_h1.T.dot(loss_deriv)
 		grad_fake_b2 = loss_deriv
 		
-		# loss_deriv = np.matmul(loss_deriv, self.d_W2.T)
 		loss_deriv = loss_deriv.dot(self.d_W2.T)
 		loss_deriv = loss_deriv*relu(self.d_h1, derivative=True)
-		# grad_fake_W1 = np.matmul(self.d_h0.T, loss_deriv)
 		grad_fake_W1 = self.d_h0.T.dot(loss_deriv)
 		grad_fake_b1 = loss_deriv
 
-		# loss_deriv = np.matmul(loss_deriv, self.d_W1.T)
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
 		loss_deriv = loss_deriv*relu(self.d_h0, derivative=True)
-		# grad_fake_W0 = np.matmul(fake_input.T, loss_deriv)
 		grad_fake_W0 = fake_input.T.dot(loss_deriv)
 		grad_fake_b0 = loss_deriv
 
@@ -240,26 +214,29 @@ class GAN(object):
 		grad_W0 = grad_real_W0 + grad_fake_W0
 		grad_b0 = grad_real_b0 + grad_fake_b0
 
-		#update weights (Adam)
+		#update weights using Adam Optimizer
+		#d_W0
 		self.m1_w = (beta1 * self.m1_w) + (1.0 - beta1) * grad_W2
 		self.v1_w = (beta2 * self.v1_w) + (1.0 - beta2) * (grad_W2 ** 2)
-
+		#d_b0
 		self.m1_b = (beta1 * self.m1_b) + (1.0 - beta1) * grad_b2
 		self.v1_b = (beta2 * self.v1_b) + (1.0 - beta2) * (grad_b2 ** 2)
 
+		#d_W1
 		self.m2_w = (beta1 * self.m2_w) + (1.0 - beta1) * grad_W1
 		self.v2_w = (beta2 * self.v2_w) + (1.0 - beta2) * (grad_W1 ** 2)
-
+		#d_b1
 		self.m2_b = (beta1 * self.m2_b) + (1.0 - beta1) * grad_b1
 		self.v2_b = (beta2 * self.v2_b) + (1.0 - beta2) * (grad_b1 ** 2)
 
+		#d_W2
 		self.m3_w = (beta1 * self.m3_w) + (1.0 - beta1) * grad_W0
 		self.v3_w = (beta2 * self.v3_w) + (1.0 - beta2) * (grad_W0 ** 2)
-
+		#d_b2
 		self.m3_b = (beta1 * self.m3_b) + (1.0 - beta1) * grad_b0
 		self.v3_b = (beta2 * self.v3_b) + (1.0 - beta2) * (grad_b0 ** 2)
 
-
+		#make update 
 		self.d_W2 = self.d_W2 - (self.learning_rate/(np.sqrt(self.v1_w / (1.0-beta2)) + epsilon))*(self.m1_w/(1.0-beta1))
 		self.d_W1 = self.d_W1 - (self.learning_rate/(np.sqrt(self.v2_w / (1.0-beta2)) + epsilon))*(self.m2_w/(1.0-beta1))
 		self.d_W0 = self.d_W0 - (self.learning_rate/(np.sqrt(self.v3_w / (1.0-beta2)) + epsilon))*(self.m3_w/(1.0-beta1))
@@ -276,6 +253,7 @@ class GAN(object):
 		#just read images
 		trainX, _, train_size = mnist_reader()
 		
+		#set batch indices
 		batch_idx = train_size//self.batch_size
 		for epoch in range(self.epochs):
 			for idx in range(batch_idx):
@@ -296,13 +274,15 @@ class GAN(object):
 
 					#cross entropy loss using sigmoid output
 					#add epsilon in log to avoid overflow
-					#Discriminator loss = -log(D(x)) - log(1-D(G(x)))
+					#Discriminator loss = -log(D(x)) + log(1-D(G(x)))
 					d_loss = -np.log(d_real_output+epsilon) + np.log(1 - d_fake_output+epsilon)
+					
 					#Generator loss = -log(D(G(x)))
 					g_loss = -np.log(d_fake_output+epsilon)
 
 					d_loss_sum += np.abs(d_loss)
 					g_loss_sum += np.abs(g_loss)
+					
 					#train discriminator
 					#one for fake input, another for real input
 					self.backprop_dis(d_real_logits, d_real_output, train_batch[i], d_fake_logits, d_fake_output, fake_img)
@@ -311,7 +291,6 @@ class GAN(object):
 					self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 					self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 
-					# print fake_img.min(), fake_img.max()
 					res_fakes.append(fake_img)
 
 

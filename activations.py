@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 
 
-def img_tile(imgs, aspect_ratio=1.0, tile_shape=None, border=1, border_color=0):
+def img_tile(imgs, name, aspect_ratio=1.0, tile_shape=None, border=1, border_color=0):
 	if imgs.ndim != 3 and imgs.ndim != 4:
 		raise ValueError('imgs has wrong number of dimensions.')
 	n_imgs = imgs.shape[0]
@@ -42,7 +42,7 @@ def img_tile(imgs, aspect_ratio=1.0, tile_shape=None, border=1, border_color=0):
 			tile_img[yoff:yoff+img_shape[0], xoff:xoff+img_shape[1], ...] = img 
 
 
-	cv2.imshow("tile", tile_img)
+	cv2.imshow(name, tile_img)
 	cv2.waitKey(1)
 
 def mnist_reader():

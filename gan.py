@@ -10,8 +10,8 @@ beta2 = 0.999
 class GAN(object):
 
 	def __init__(self):
-		self.batch_size = 64
-		self.epochs = 25
+		self.batch_size = 36
+		self.epochs = 100
 		self.learning_rate = 0.0002
 
 		#init generator weights
@@ -293,14 +293,16 @@ class GAN(object):
 					self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 					self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 					self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
-					
+
 					res_fakes.append(fake_img)
 
 
-				img_tile(np.array(res_fakes))
-				# img_tile(train_batch)
+				img_tile(np.array(res_fakes), "fake")
+				img_tile(train_batch, "real")
 
 				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f"%(epoch, idx, g_loss_sum/self.batch_size, d_loss_sum/self.batch_size)
+
+				
 
 
 gan = GAN()

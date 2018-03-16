@@ -33,13 +33,14 @@ def img_tile(imgs, aspect_ratio=1.0, tile_shape=None, border=1, border_color=0):
 			if img_idx >= n_imgs:
 				# No more images - stop filling out the grid.
 				break
-			img = imgs[img_idx]
 
-			#img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+			#-1~1 to 0~1
+			img = (imgs[img_idx] + 1)/2.0
 
 			yoff = (img_shape[0] + border) * i
 			xoff = (img_shape[1] + border) * j
-			tile_img[yoff:yoff+img_shape[0], xoff:xoff+img_shape[1], ...] = img
+			tile_img[yoff:yoff+img_shape[0], xoff:xoff+img_shape[1], ...] = img 
+
 
 	cv2.imshow("tile", tile_img)
 	cv2.waitKey(1)
@@ -57,7 +58,7 @@ def mnist_reader():
 	#Training Data
 	f = open('./data/train-images.idx3-ubyte')
 	loaded = np.fromfile(file=f, dtype=np.uint8)
-	trainX = loaded[16:].reshape((60000, 28, 28, 1)).astype(np.float32) / 255.0# 127.5 - 1
+	trainX = loaded[16:].reshape((60000, 28, 28, 1)).astype(np.float32) /  127.5 - 1
 
 
 	f = open('./data/train-labels.idx1-ubyte')
@@ -85,48 +86,20 @@ def sigmoid(input, derivative=False):
 	if derivative:
 		return res*(1-res)
 
-	return np.clip(res, 0.001, np.inf)
+	return res
 
 def relu(input, derivative=False):
 	res = input
 	if not derivative:
-		return input * (input > 0)
+		# return res * (res > 0)
+		return np.maximum(input, 0, input)
 	else:
-		return 1.0 * (input > 0)
+		return 1.0 * (res > 0)
 	
-
 
 def tanh(input, derivative=False):
 	res = np.tanh(input)
+	if derivative:
+		return 1 - np.tanh(input) ** 2
+
 	return res
-
-
-def batchnorm_forward(X, gamma, beta):
-    mu = np.mean(X, axis=0)
-    var = np.var(X, axis=0)
-
-    X_norm = (X - mu) / np.sqrt(var + 1e-8)
-    out = gamma * X_norm + beta
-
-    cache = (X, X_norm, mu, var, gamma, beta)
-
-    return out, cache
-
-
-def batchnorm_backward(dout, cache):
-    X, X_norm, mu, var, gamma, beta = cache
-
-    N, D = X.shape
-
-    X_mu = X - mu
-    std_inv = 1. / np.sqrt(var + 1e-8)
-
-    dX_norm = dout * gamma
-    dvar = np.sum(dX_norm * X_mu, axis=0) * -.5 * std_inv**3
-    dmu = np.sum(dX_norm * -std_inv, axis=0) + dvar * np.mean(-2. * X_mu, axis=0)
-
-    dX = (dX_norm * std_inv) + (dvar * 2 * X_mu / N) + (dmu / N)
-    dgamma = np.sum(dout * X_norm, axis=0)
-    dbeta = np.sum(dout, axis=0)
-
-    return dX, dgamma, dbeta

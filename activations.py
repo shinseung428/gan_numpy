@@ -1,8 +1,8 @@
 import numpy as np
-import cv2
+from PIL import Image
 
 
-def img_tile(imgs, name, aspect_ratio=1.0, tile_shape=None, border=1, border_color=0):
+def img_tile(imgs, path, epoch, step, aspect_ratio=1.0, tile_shape=None, border=1, border_color=0):
 	if imgs.ndim != 3 and imgs.ndim != 4:
 		raise ValueError('imgs has wrong number of dimensions.')
 	n_imgs = imgs.shape[0]
@@ -35,15 +35,18 @@ def img_tile(imgs, name, aspect_ratio=1.0, tile_shape=None, border=1, border_col
 				break
 
 			#-1~1 to 0~1
-			img = (imgs[img_idx] + 1)/2.0
+			img = (imgs[img_idx] + 1)/2.0 * 255.0
 
 			yoff = (img_shape[0] + border) * i
 			xoff = (img_shape[1] + border) * j
 			tile_img[yoff:yoff+img_shape[0], xoff:xoff+img_shape[1], ...] = img 
 
 
-	cv2.imshow(name, tile_img)
-	cv2.waitKey(1)
+	im = Image.fromarray(tile_img)
+	if im.mode != 'RGB':
+   		im = im.convert('RGB')
+	im.save(path+"/%03d_%06d.jpg"%(epoch,step))
+	
 
 def mnist_reader():
 	def one_hot(label, output_dim):

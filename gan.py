@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import cv2
 
 from activations import *
@@ -13,6 +14,15 @@ class GAN(object):
 		self.batch_size = 36
 		self.epochs = 100
 		self.learning_rate = 0.0002
+
+		#save result every 5000 steps
+		#batch of image is processed each step
+		self.checkpoint = 5000
+		self.img_path = "./images"
+		if not os.path.exists(self.img_path):
+			os.makedirs(self.img_path)
+
+
 
 		#init generator weights
 		self.g_W0 = np.random.randn(100,250).astype(np.float32) * np.sqrt(2.0/(100))
@@ -255,6 +265,7 @@ class GAN(object):
 		#just read images
 		trainX, _, train_size = mnist_reader()
 		
+		total_step = 0
 		#set batch indices
 		batch_idx = train_size//self.batch_size
 		for epoch in range(self.epochs):
@@ -292,17 +303,17 @@ class GAN(object):
 					#train generator twice
 					self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 					self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
-					self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 
 					res_fakes.append(fake_img)
 
+				total_step += 1
 
-				img_tile(np.array(res_fakes), "fake")
-				img_tile(train_batch, "real")
+				if total_step%self.checkpoint == 0:
+					img_tile(np.array(res_fakes), self.img_path, epoch, idx)
 
 				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f"%(epoch, idx, g_loss_sum/self.batch_size, d_loss_sum/self.batch_size)
 
-				
+
 
 
 gan = GAN()

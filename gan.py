@@ -10,7 +10,7 @@ beta2 = 0.999
 class GAN(object):
 
 	def __init__(self):
-		self.batch_size = 36
+		self.batch_size = 64
 		self.epochs = 25
 		self.learning_rate = 0.0002
 
@@ -21,11 +21,8 @@ class GAN(object):
 		self.g_W1 = np.random.randn(250,450).astype(np.float32) * np.sqrt(2.0/(250))
 		self.g_b1 = np.zeros(450).astype(np.float32)
 		
-		self.g_W2 = np.random.randn(450,600).astype(np.float32) * np.sqrt(2.0/(450))
-		self.g_b2 = np.zeros(600).astype(np.float32)
-
-		self.g_W3 = np.random.randn(600,28*28).astype(np.float32) * np.sqrt(2.0/(600))
-		self.g_b3 = np.zeros(28*28).astype(np.float32)
+		self.g_W2 = np.random.randn(450,28*28).astype(np.float32) * np.sqrt(2.0/(300))
+		self.g_b2 = np.zeros(28*28).astype(np.float32)
 		
 
 		#init discriminator weights
@@ -55,8 +52,6 @@ class GAN(object):
 		self.v6_b,self.m6_b = 0.0, 0.0
 		self.v7_w,self.m7_w = 0.0, 0.0
 		self.v7_b,self.m7_b = 0.0, 0.0
-		self.v8_w,self.m8_w = 0.0, 0.0
-		self.v8_b,self.m8_b = 0.0, 0.0
 
 	def discriminator(self, img):
 		self.d_input = np.reshape(img, (1,-1))
@@ -86,13 +81,10 @@ class GAN(object):
 		
 		# self.g_h2 = np.matmul(self.g_h1, self.g_W2) + self.g_b2
 		self.g_h2 = self.g_h1.dot(self.g_W2) + self.g_b2
-		self.g_h2 = relu(self.g_h2)
-
-		self.g_h3 = self.g_h2.dot(self.g_W3) + self.g_b3
-		self.g_out = tanh(self.g_h3)
+		self.g_out = tanh(self.g_h2)
 
 		self.g_out = np.reshape(self.g_out, (28, 28))
-
+		
 		return self.g_h2, self.g_out
 
 	# generator backpropagation
@@ -122,12 +114,7 @@ class GAN(object):
 		#Reached the end of the generator
 
 		#Calculate gradients
-		loss_deriv = loss_deriv*tanh(self.g_h3, derivative=True)
-		grad_W3 = self.g_h2.T.dot(loss_deriv)
-		grad_b3 = loss_deriv	
-
-		loss_deriv = loss_deriv.dot(self.g_W3.T)
-		loss_deriv = loss_deriv*relu(self.g_h2, derivative=True)
+		loss_deriv = loss_deriv*tanh(self.g_h2, derivative=True)
 		grad_W2 = self.g_h1.T.dot(loss_deriv)
 		grad_b2 = loss_deriv	
 
@@ -162,20 +149,12 @@ class GAN(object):
 		#g_b2
 		self.m6_b = (beta1 * self.m6_b) + (1.0 - beta1) * grad_b0
 		self.v6_b = (beta2 * self.v6_b) + (1.0 - beta2) * (grad_b0 ** 2)
-
-		self.m7_w = (beta1 * self.m7_w) + (1.0 - beta1) * grad_W3
-		self.v7_w = (beta2 * self.v7_w) + (1.0 - beta2) * (grad_W3 ** 2)
-
-		self.m8_b = (beta1 * self.m8_b) + (1.0 - beta1) * grad_b3
-		self.v8_b = (beta2 * self.v8_b) + (1.0 - beta2) * (grad_b3 ** 2)		
 		
 		#make update
-		self.g_W3 = self.g_W3 - (self.learning_rate/(np.sqrt(self.v7_w / (1.0-beta2)) + epsilon))*(self.m7_w/(1.0-beta1))
 		self.g_W2 = self.g_W2 - (self.learning_rate/(np.sqrt(self.v4_w / (1.0-beta2)) + epsilon))*(self.m4_w/(1.0-beta1))
 		self.g_W1 = self.g_W1 - (self.learning_rate/(np.sqrt(self.v5_w / (1.0-beta2)) + epsilon))*(self.m5_w/(1.0-beta1))
 		self.g_W0 = self.g_W0 - (self.learning_rate/(np.sqrt(self.v6_w / (1.0-beta2)) + epsilon))*(self.m6_w/(1.0-beta1))
 		
-		self.g_b3 = self.g_b3 - np.reshape((self.learning_rate/(np.sqrt(self.v8_b / (1.0-beta2)) + epsilon))*(self.m8_b/(1.0-beta1)), -1)
 		self.g_b2 = self.g_b2 - np.reshape((self.learning_rate/(np.sqrt(self.v4_b / (1.0-beta2)) + epsilon))*(self.m4_b/(1.0-beta1)), -1)
 		self.g_b1 = self.g_b1 - np.reshape((self.learning_rate/(np.sqrt(self.v5_b / (1.0-beta2)) + epsilon))*(self.m5_b/(1.0-beta1)), -1)
 		self.g_b0 = self.g_b0 - np.reshape((self.learning_rate/(np.sqrt(self.v6_b / (1.0-beta2)) + epsilon))*(self.m6_b/(1.0-beta1)), -1)
@@ -313,7 +292,8 @@ class GAN(object):
 					#train generator twice
 					self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 					self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
-
+					self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
+					
 					res_fakes.append(fake_img)
 
 

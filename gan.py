@@ -11,13 +11,13 @@ beta2 = 0.999
 class GAN(object):
 
 	def __init__(self):
-		self.batch_size = 36
+		self.batch_size = 64
 		self.epochs = 100
 		self.learning_rate = 0.0002
 
 		#save result every 5000 steps
 		#batch of image is processed each step
-		self.checkpoint = 5000
+		self.checkpoint = 1
 		self.img_path = "./images"
 		if not os.path.exists(self.img_path):
 			os.makedirs(self.img_path)
@@ -183,8 +183,8 @@ class GAN(object):
 		fake_input = np.reshape(fake_input, (self.batch_size,-1))
 
 		#Calculate gradients of the loss(amount to move)
-		d_real_loss = -1.0/(real_output+epsilon)
-		d_fake_loss = 1.0/(1.0-fake_output+epsilon)
+		d_real_loss = -np.mean(1.0/(real_output+epsilon), axis=0)
+		d_fake_loss = np.mean(1.0/(1.0-fake_output+epsilon), axis=0)
 
 		#real input gradients
 		loss_deriv = d_real_loss*sigmoid(real_logit, derivative=True)
@@ -301,6 +301,8 @@ class GAN(object):
 									
 				# #train generator twice
 				self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
+				g_logits, fake_img = self.generator(z)
+				d_fake_logits, d_fake_output = self.discriminator(fake_img)
 				self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 
 				

@@ -13,7 +13,7 @@ class GAN(object):
 	def __init__(self):
 		self.batch_size = 64
 		self.epochs = 100
-		self.learning_rate = 0.0002
+		self.learning_rate = 0.0001
 
 		#save result every 5000 steps
 		#batch of image is processed each step
@@ -25,24 +25,24 @@ class GAN(object):
 
 
 		#init generator weights
-		self.g_W0 = np.random.randn(100,250).astype(np.float32) * np.sqrt(2.0/(100))
-		self.g_b0 = np.zeros(250).astype(np.float32)
+		self.g_W0 = np.random.randn(100,100).astype(np.float32) * np.sqrt(2.0/(100))
+		self.g_b0 = np.zeros(100).astype(np.float32)
 
-		self.g_W1 = np.random.randn(250,450).astype(np.float32) * np.sqrt(2.0/(250))
-		self.g_b1 = np.zeros(450).astype(np.float32)
+		self.g_W1 = np.random.randn(100,200).astype(np.float32) * np.sqrt(2.0/(100))
+		self.g_b1 = np.zeros(200).astype(np.float32)
 		
-		self.g_W2 = np.random.randn(450,28*28).astype(np.float32) * np.sqrt(2.0/(300))
+		self.g_W2 = np.random.randn(200,28*28).astype(np.float32) * np.sqrt(2.0/(200))
 		self.g_b2 = np.zeros(28*28).astype(np.float32)
 		
 
 		#init discriminator weights
-		self.d_W0 = np.random.randn(28*28,300).astype(np.float32) * np.sqrt(2.0/(28*28))
-		self.d_b0 = np.zeros(300).astype(np.float32)
+		self.d_W0 = np.random.randn(28*28,200).astype(np.float32) * np.sqrt(2.0/(28*28))
+		self.d_b0 = np.zeros(200).astype(np.float32)
 
-		self.d_W1 = np.random.randn(300,150).astype(np.float32) * np.sqrt(2.0/(300))
-		self.d_b1 = np.zeros(150).astype(np.float32)
+		self.d_W1 = np.random.randn(200,100).astype(np.float32) * np.sqrt(2.0/(200))
+		self.d_b1 = np.zeros(100).astype(np.float32)
 		
-		self.d_W2 = np.random.randn(150,1).astype(np.float32) * np.sqrt(2.0/(150))
+		self.d_W2 = np.random.randn(100,1).astype(np.float32) * np.sqrt(2.0/(100))
 		self.d_b2 = np.zeros(1).astype(np.float32)
 
 		#Adam Optimizer Vars for the Discriminator
@@ -65,16 +65,14 @@ class GAN(object):
 
 	def discriminator(self, img):
 		self.d_input = np.reshape(img, (self.batch_size,-1))
-		
-		# self.d_h0 = np.matmul(self.d_input, self.d_W0) + self.d_b0
+				
 		self.d_h0 = self.d_input.dot(self.d_W0) + self.d_b0
 		self.d_h0 = relu(self.d_h0)
 
-		# self.d_h1 = np.matmul(self.d_h0, self.d_W1) + self.d_b1
 		self.d_h1 = self.d_h0.dot(self.d_W1) + self.d_b1
 		self.d_h1 = relu(self.d_h1)
 
-		# self.d_out = np.matmul(self.d_h1, self.d_W2) + self.d_b2
+		
 		self.d_out = self.d_h1.dot(self.d_W2) + self.d_b2
 
 		return self.d_out, sigmoid(self.d_out)
@@ -136,7 +134,7 @@ class GAN(object):
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_W1 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)#self.g_h0.T.dot(loss_deriv)
 		grad_b1 = np.mean(loss_deriv_, axis=0)		
-		
+
 		loss_deriv = loss_deriv.dot(self.g_W1.T)
 		loss_deriv = loss_deriv*relu(self.g_h0, derivative=True)
 		prev_layer = np.expand_dims(self.z, axis=-1)

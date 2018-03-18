@@ -118,27 +118,27 @@ class GAN(object):
 		loss_deriv = loss_deriv*relu(self.d_h0, derivative=True)		
 		
 		loss_deriv = loss_deriv.dot(self.d_W0.T)
+		loss_deriv = loss_deriv*tanh(self.g_h2, derivative=True)
 		#Reached the end of the generator
 
 		#Calculate gradients
-		loss_deriv = loss_deriv*tanh(self.g_h2, derivative=True)
 		prev_layer = np.expand_dims(self.g_h1, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
-		grad_W2 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)#self.g_h1.T.dot(loss_deriv)
+		grad_W2 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)
 		grad_b2 = np.mean(loss_deriv_, axis=0)	
 
 		loss_deriv = loss_deriv.dot(self.g_W2.T)
 		loss_deriv = loss_deriv*relu(self.g_h1, derivative=True)
 		prev_layer = np.expand_dims(self.g_h0, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
-		grad_W1 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)#self.g_h0.T.dot(loss_deriv)
+		grad_W1 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)
 		grad_b1 = np.mean(loss_deriv_, axis=0)		
 
 		loss_deriv = loss_deriv.dot(self.g_W1.T)
 		loss_deriv = loss_deriv*relu(self.g_h0, derivative=True)
 		prev_layer = np.expand_dims(self.z, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
-		grad_W0 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)#self.z.T.dot(loss_deriv)
+		grad_W0 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)
 		grad_b0 = np.mean(loss_deriv_, axis=0)
 
 		#update weights Adam Optimizer
@@ -188,15 +188,14 @@ class GAN(object):
 		d_real_loss = -1.0/(real_output+epsilon)
 		d_fake_loss = 1.0/(1.0-fake_output+epsilon)
 
-		#real input gradients
 		#start from the error in the last layer
+		#real input gradients
 		loss_deriv = d_real_loss*sigmoid(real_logit, derivative=True)
 		prev_layer = np.expand_dims(self.d_h1, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_real_W2 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)#self.d_h1.T.dot(loss_deriv)
 		grad_real_b2 = np.mean(loss_deriv_, axis=0) 
 
-		
 		loss_deriv = loss_deriv.dot(self.d_W2.T)
 		loss_deriv = loss_deriv*relu(self.d_h1, derivative=True)
 		prev_layer = np.expand_dims(self.d_h0, axis=-1)
@@ -212,26 +211,12 @@ class GAN(object):
 		grad_real_b0 = np.mean(loss_deriv_, axis=0)
 
 		#fake input gradients
-		# loss_deriv = d_fake_loss*sigmoid(fake_logit, derivative=True)
-		# grad_fake_W2 = self.d_h1.T.dot(loss_deriv)
-		# grad_fake_b2 = np.mean(loss_deriv, axis=0)
-		
-		# loss_deriv = loss_deriv.dot(self.d_W2.T)
-		# loss_deriv = loss_deriv*relu(self.d_h1, derivative=True)
-		# grad_fake_W1 = self.d_h0.T.dot(loss_deriv)
-		# grad_fake_b1 = np.mean(loss_deriv, axis=0)
-
-		# loss_deriv = loss_deriv.dot(self.d_W1.T)
-		# loss_deriv = loss_deriv*relu(self.d_h0, derivative=True)
-		# grad_fake_W0 = fake_input.T.dot(loss_deriv)
-		# grad_fake_b0 = np.mean(loss_deriv, axis=0)
 		loss_deriv = d_fake_loss*sigmoid(fake_logit, derivative=True)
 		prev_layer = np.expand_dims(self.d_h1, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_fake_W2 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)#self.d_h1.T.dot(loss_deriv)
 		grad_fake_b2 = np.mean(loss_deriv_, axis=0) 
 
-		
 		loss_deriv = loss_deriv.dot(self.d_W2.T)
 		loss_deriv = loss_deriv*relu(self.d_h1, derivative=True)
 		prev_layer = np.expand_dims(self.d_h0, axis=-1)
@@ -314,7 +299,8 @@ class GAN(object):
 				d_real_logits, d_real_output = self.discriminator(train_batch)
 				d_fake_logits, d_fake_output = self.discriminator(fake_img)
 
-
+				print d_real_output
+				print d_fake_output
 				#cross entropy loss using sigmoid output
 				#add epsilon in log to avoid overflow
 				#Discriminator loss = -log(D(x)) + log(1-D(G(x)))

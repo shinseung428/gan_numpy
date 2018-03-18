@@ -93,8 +93,8 @@ def sigmoid(input, derivative=False):
 def relu(input, derivative=False):
 	res = input
 	if not derivative:
-		# return res * (res > 0)
-		return np.maximum(input, 0, input)
+		return res * (res > 0)
+		# return np.maximum(input, 0, input)
 	else:
 		return 1.0 * (res > 0)
 	

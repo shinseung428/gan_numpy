@@ -11,7 +11,7 @@ beta2 = 0.999
 class GAN(object):
 
 	def __init__(self):
-		self.batch_size = 16
+		self.batch_size = 36
 		self.epochs = 100
 		self.learning_rate = 0.0001
 
@@ -288,7 +288,8 @@ class GAN(object):
 			for idx in range(batch_idx):
 				#prepare batch and input vector z
 				train_batch = trainX[idx*self.batch_size:idx*self.batch_size + self.batch_size]
-				z = np.random.uniform(-1,1,[self.batch_size,100])
+				#z = np.random.uniform(-1,1,[self.batch_size,100])
+				z = np.random.randn(self.batch_size, 100).astype(np.float32)
 
 				#process each element in the batch
 				g_loss_sum, d_loss_sum = 0.0, 0.0
@@ -299,8 +300,6 @@ class GAN(object):
 				d_real_logits, d_real_output = self.discriminator(train_batch)
 				d_fake_logits, d_fake_output = self.discriminator(fake_img)
 
-				print d_real_output
-				print d_fake_output
 				#cross entropy loss using sigmoid output
 				#add epsilon in log to avoid overflow
 				#Discriminator loss = -log(D(x)) + log(1-D(G(x)))

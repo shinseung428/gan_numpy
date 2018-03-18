@@ -299,8 +299,10 @@ class GAN(object):
 				# #one for fake input, another for real input
 				self.backprop_dis(d_real_logits, d_real_output, train_batch, d_fake_logits, d_fake_output, fake_img)
 									
-				# #train generator twice
+				# #train generator 
 				self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
+
+				# #train generator twice
 				g_logits, fake_img = self.generator(z)
 				d_fake_logits, d_fake_output = self.discriminator(fake_img)
 				self.backprop_gen(d_fake_logits, d_fake_output, fake_img)

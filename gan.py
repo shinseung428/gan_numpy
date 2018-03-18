@@ -114,7 +114,6 @@ class GAN(object):
 		#we calculate them but won't update the discriminator weights
 		#fake input gradients
 		loss_deriv = d_loss*sigmoid(fake_logit, derivative=True)
-		
 		loss_deriv = loss_deriv.dot(self.d_W2.T)
 		loss_deriv = loss_deriv*relu(self.d_h1, derivative=True)
 
@@ -126,18 +125,24 @@ class GAN(object):
 
 		#Calculate gradients
 		loss_deriv = loss_deriv*tanh(self.g_h2, derivative=True)
-		grad_W2 = self.g_h1.T.dot(loss_deriv)
-		grad_b2 = np.mean(loss_deriv, axis=0)	
+		prev_layer = np.expand_dims(self.g_h1, axis=-1)
+		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
+		grad_W2 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)#self.g_h1.T.dot(loss_deriv)
+		grad_b2 = np.mean(loss_deriv_, axis=0)	
 
 		loss_deriv = loss_deriv.dot(self.g_W2.T)
 		loss_deriv = loss_deriv*relu(self.g_h1, derivative=True)
-		grad_W1 = self.g_h0.T.dot(loss_deriv)
-		grad_b1 = np.mean(loss_deriv, axis=0)		
-
+		prev_layer = np.expand_dims(self.g_h0, axis=-1)
+		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
+		grad_W1 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)#self.g_h0.T.dot(loss_deriv)
+		grad_b1 = np.mean(loss_deriv_, axis=0)		
+		
 		loss_deriv = loss_deriv.dot(self.g_W1.T)
 		loss_deriv = loss_deriv*relu(self.g_h0, derivative=True)
-		grad_W0 = self.z.T.dot(loss_deriv)
-		grad_b0 = np.mean(loss_deriv, axis=0)
+		prev_layer = np.expand_dims(self.z, axis=-1)
+		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
+		grad_W0 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)#self.z.T.dot(loss_deriv)
+		grad_b0 = np.mean(loss_deriv_, axis=0)
 
 		#update weights Adam Optimizer
 		#g_W0

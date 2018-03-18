@@ -11,7 +11,7 @@ beta2 = 0.999
 class GAN(object):
 
 	def __init__(self):
-		self.batch_size = 64
+		self.batch_size = 16
 		self.epochs = 100
 		self.learning_rate = 0.0001
 

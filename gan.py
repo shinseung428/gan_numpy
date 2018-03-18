@@ -64,7 +64,7 @@ class GAN(object):
 		self.v7_b,self.m7_b = 0.0, 0.0
 
 	def discriminator(self, img):
-		self.d_input = np.reshape(img, (1,-1))
+		self.d_input = np.reshape(img, (self.batch_size,-1))
 		
 		# self.d_h0 = np.matmul(self.d_input, self.d_W0) + self.d_b0
 		self.d_h0 = self.d_input.dot(self.d_W0) + self.d_b0
@@ -80,7 +80,8 @@ class GAN(object):
 		return self.d_out, sigmoid(self.d_out)
 
 	def generator(self, z):
-		self.z = np.reshape(z, (1, -1))
+		self.z = np.reshape(z, (self.batch_size, -1))
+
 		# self.g_h0 = np.matmul(z, self.g_W0) + self.g_b0
 		self.g_h0 = z.dot(self.g_W0) + self.g_b0
 		self.g_h0 = relu(self.g_h0)
@@ -93,7 +94,7 @@ class GAN(object):
 		self.g_h2 = self.g_h1.dot(self.g_W2) + self.g_b2
 		self.g_out = tanh(self.g_h2)
 
-		self.g_out = np.reshape(self.g_out, (28, 28))
+		self.g_out = np.reshape(self.g_out, (self.batch_size, 28, 28))
 		
 		return self.g_h2, self.g_out
 
@@ -102,10 +103,10 @@ class GAN(object):
 		#logit : sigmoid output from the discriminator D(G(x))
 		
 		#flatten fake image input
-		fake_input = np.reshape(fake_input, (1,-1))
+		fake_input = np.reshape(fake_input, (self.batch_size,-1))
 		
 		#calculate the loss_derivative of the loss term -log(D(G(x)))
-		d_loss = np.reshape(fake_sig_output, (1, -1))
+		d_loss = np.reshape(fake_sig_output, (self.batch_size, -1))
 		d_loss = -1.0/(d_loss+epsilon)
 
 
@@ -126,17 +127,17 @@ class GAN(object):
 		#Calculate gradients
 		loss_deriv = loss_deriv*tanh(self.g_h2, derivative=True)
 		grad_W2 = self.g_h1.T.dot(loss_deriv)
-		grad_b2 = loss_deriv	
+		grad_b2 = np.mean(loss_deriv, axis=0)	
 
 		loss_deriv = loss_deriv.dot(self.g_W2.T)
 		loss_deriv = loss_deriv*relu(self.g_h1, derivative=True)
 		grad_W1 = self.g_h0.T.dot(loss_deriv)
-		grad_b1 = loss_deriv		
+		grad_b1 = np.mean(loss_deriv, axis=0)		
 
 		loss_deriv = loss_deriv.dot(self.g_W1.T)
 		loss_deriv = loss_deriv*relu(self.g_h0, derivative=True)
 		grad_W0 = self.z.T.dot(loss_deriv)
-		grad_b0 = loss_deriv
+		grad_b0 = np.mean(loss_deriv, axis=0)
 
 		#update weights Adam Optimizer
 		#g_W0
@@ -178,8 +179,8 @@ class GAN(object):
 		# fake_output : Discriminator output in range 0~1 (generated input) 
 		# fake_input : fake input image fed into the discriminator
 
-		real_input = np.reshape(real_input, (1,-1))
-		fake_input = np.reshape(fake_input, (1,-1))
+		real_input = np.reshape(real_input, (self.batch_size,-1))
+		fake_input = np.reshape(fake_input, (self.batch_size,-1))
 
 		#Calculate gradients of the loss(amount to move)
 		d_real_loss = -1.0/(real_output+epsilon)
@@ -188,33 +189,34 @@ class GAN(object):
 		#real input gradients
 		loss_deriv = d_real_loss*sigmoid(real_logit, derivative=True)
 		grad_real_W2 = self.d_h1.T.dot(loss_deriv)
-		grad_real_b2 = loss_deriv 
+		grad_real_b2 = np.mean(loss_deriv, axis=0) 
 
 		loss_deriv = loss_deriv.dot(self.d_W2.T)
 		loss_deriv = loss_deriv*relu(self.d_h1, derivative=True)
 		grad_real_W1 = self.d_h0.T.dot(loss_deriv)
-		grad_real_b1 = loss_deriv
-
+		grad_real_b1 = np.mean(loss_deriv, axis=0)
+		
+		
 
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
 		loss_deriv = loss_deriv*relu(self.d_h0, derivative=True)
 		grad_real_W0 = real_input.T.dot(loss_deriv)
-		grad_real_b0 = loss_deriv
+		grad_real_b0 = np.mean(loss_deriv, axis=0)
 
 		#fake input gradients
 		loss_deriv = d_fake_loss*sigmoid(fake_logit, derivative=True)
 		grad_fake_W2 = self.d_h1.T.dot(loss_deriv)
-		grad_fake_b2 = loss_deriv
+		grad_fake_b2 = np.mean(loss_deriv, axis=0)
 		
 		loss_deriv = loss_deriv.dot(self.d_W2.T)
 		loss_deriv = loss_deriv*relu(self.d_h1, derivative=True)
 		grad_fake_W1 = self.d_h0.T.dot(loss_deriv)
-		grad_fake_b1 = loss_deriv
+		grad_fake_b1 = np.mean(loss_deriv, axis=0)
 
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
 		loss_deriv = loss_deriv*relu(self.d_h0, derivative=True)
 		grad_fake_W0 = fake_input.T.dot(loss_deriv)
-		grad_fake_b0 = loss_deriv
+		grad_fake_b0 = np.mean(loss_deriv, axis=0)
 
 		#combine two gradients
 		grad_W2 = grad_real_W2 + grad_fake_W2
@@ -272,46 +274,41 @@ class GAN(object):
 			for idx in range(batch_idx):
 				#prepare batch and input vector z
 				train_batch = trainX[idx*self.batch_size:idx*self.batch_size + self.batch_size]
-				batch_z = np.random.uniform(-1,1,[self.batch_size,100])
+				z = np.random.uniform(-1,1,[self.batch_size,100])
 
 				#process each element in the batch
-				res_fakes = []
 				g_loss_sum, d_loss_sum = 0.0, 0.0
-				for i in range(self.batch_size):
-					#forward pass
-					z = np.reshape(batch_z[i], (1,-1))
-					g_logits, fake_img = self.generator(z)
+				
+				#forward pass
+				g_logits, fake_img = self.generator(z)
 
-					d_real_logits, d_real_output = self.discriminator(train_batch[i])
-					d_fake_logits, d_fake_output = self.discriminator(fake_img)
+				d_real_logits, d_real_output = self.discriminator(train_batch)
+				d_fake_logits, d_fake_output = self.discriminator(fake_img)
 
-					#cross entropy loss using sigmoid output
-					#add epsilon in log to avoid overflow
-					#Discriminator loss = -log(D(x)) + log(1-D(G(x)))
-					d_loss = -np.log(d_real_output+epsilon) + np.log(1 - d_fake_output+epsilon)
-					
-					#Generator loss = -log(D(G(x)))
-					g_loss = -np.log(d_fake_output+epsilon)
 
-					d_loss_sum += np.abs(d_loss)
-					g_loss_sum += np.abs(g_loss)
-					
-					#train discriminator
-					#one for fake input, another for real input
-					self.backprop_dis(d_real_logits, d_real_output, train_batch[i], d_fake_logits, d_fake_output, fake_img)
-										
-					#train generator twice
-					self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
-					self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
+				#cross entropy loss using sigmoid output
+				#add epsilon in log to avoid overflow
+				#Discriminator loss = -log(D(x)) + log(1-D(G(x)))
+				d_loss = -np.log(d_real_output+epsilon) + np.log(1 - d_fake_output+epsilon)
+				
+				#Generator loss = -log(D(G(x)))
+				g_loss = -np.log(d_fake_output+epsilon)
 
-					res_fakes.append(fake_img)
+
+				# #train discriminator
+				# #one for fake input, another for real input
+				self.backprop_dis(d_real_logits, d_real_output, train_batch, d_fake_logits, d_fake_output, fake_img)
+									
+				# #train generator twice
+				self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
+				self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 
 				
 
 				if total_step%self.checkpoint == 0:
-					img_tile(np.array(res_fakes), self.img_path, epoch, idx)
+					img_tile(np.array(fake_img), self.img_path, epoch, idx)
 
-				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f"%(epoch, idx, g_loss_sum/self.batch_size, d_loss_sum/self.batch_size)
+				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f"%(epoch, idx, np.mean(g_loss), np.mean(d_loss))
 				total_step += 1
 
 

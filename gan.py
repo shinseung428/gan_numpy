@@ -28,18 +28,18 @@ class GAN(object):
 		self.g_W0 = np.random.randn(100,100).astype(np.float32) * np.sqrt(2.0/(100))
 		self.g_b0 = np.zeros(100).astype(np.float32)
 
-		self.g_W1 = np.random.randn(100,200).astype(np.float32) * np.sqrt(2.0/(100))
-		self.g_b1 = np.zeros(200).astype(np.float32)
+		self.g_W1 = np.random.randn(100,100).astype(np.float32) * np.sqrt(2.0/(100))
+		self.g_b1 = np.zeros(100).astype(np.float32)
 		
-		self.g_W2 = np.random.randn(200,28*28).astype(np.float32) * np.sqrt(2.0/(200))
+		self.g_W2 = np.random.randn(100,28*28).astype(np.float32) * np.sqrt(2.0/(100))
 		self.g_b2 = np.zeros(28*28).astype(np.float32)
 		
 
 		#init discriminator weights
-		self.d_W0 = np.random.randn(28*28,200).astype(np.float32) * np.sqrt(2.0/(28*28))
-		self.d_b0 = np.zeros(200).astype(np.float32)
+		self.d_W0 = np.random.randn(28*28,100).astype(np.float32) * np.sqrt(2.0/(28*28))
+		self.d_b0 = np.zeros(100).astype(np.float32)
 
-		self.d_W1 = np.random.randn(200,100).astype(np.float32) * np.sqrt(2.0/(200))
+		self.d_W1 = np.random.randn(100,100).astype(np.float32) * np.sqrt(2.0/(100))
 		self.d_b1 = np.zeros(100).astype(np.float32)
 		
 		self.d_W2 = np.random.randn(100,1).astype(np.float32) * np.sqrt(2.0/(100))
@@ -102,11 +102,10 @@ class GAN(object):
 		
 		#flatten fake image input
 		fake_input = np.reshape(fake_input, (self.batch_size,-1))
-		
+
 		#calculate the loss_derivative of the loss term -log(D(G(x)))
 		d_loss = np.reshape(fake_sig_output, (self.batch_size, -1))
 		d_loss = -1.0/(d_loss+epsilon)
-
 
 		#calculate gradients from the end of the discriminator
 		#we calculate them but won't update the discriminator weights
@@ -186,8 +185,8 @@ class GAN(object):
 		fake_input = np.reshape(fake_input, (self.batch_size,-1))
 
 		#Calculate gradients of the loss(amount to move)
-		d_real_loss = -np.mean(1.0/(real_output+epsilon), axis=0)
-		d_fake_loss = np.mean(1.0/(1.0-fake_output+epsilon), axis=0)
+		d_real_loss = -1.0/(real_output+epsilon)
+		d_fake_loss = 1.0/(1.0-fake_output+epsilon)
 
 		#real input gradients
 		#start from the error in the last layer

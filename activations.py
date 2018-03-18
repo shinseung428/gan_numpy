@@ -99,6 +99,16 @@ def relu(input, derivative=False):
 		return 1.0 * (res > 0)
 	
 
+def lrelu(input, alpha=0.02, derivative=False):
+	res = input
+	if not derivative:
+		# return res * (res > 0)
+		return np.maximum(input, input*alpha, input)
+	else:
+		dx = np.ones_like(res)
+		dx[res < 0] = alpha
+		return dx
+
 def tanh(input, derivative=False):
 	res = np.tanh(input)
 	if derivative:

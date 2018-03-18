@@ -67,10 +67,10 @@ class GAN(object):
 		self.d_input = np.reshape(img, (self.batch_size,-1))
 				
 		self.d_h0 = self.d_input.dot(self.d_W0) + self.d_b0
-		self.d_h0 = relu(self.d_h0)
+		self.d_h0 = lrelu(self.d_h0)
 
 		self.d_h1 = self.d_h0.dot(self.d_W1) + self.d_b1
-		self.d_h1 = relu(self.d_h1)
+		self.d_h1 = lrelu(self.d_h1)
 
 		
 		self.d_out = self.d_h1.dot(self.d_W2) + self.d_b2
@@ -82,11 +82,11 @@ class GAN(object):
 
 		# self.g_h0 = np.matmul(z, self.g_W0) + self.g_b0
 		self.g_h0 = z.dot(self.g_W0) + self.g_b0
-		self.g_h0 = relu(self.g_h0)
+		self.g_h0 = lrelu(self.g_h0)
 
 		# self.g_h1 = np.matmul(self.g_h0, self.g_W1) + self.g_b1
 		self.g_h1 = self.g_h0.dot(self.g_W1) + self.g_b1
-		self.g_h1 = relu(self.g_h1)
+		self.g_h1 = lrelu(self.g_h1)
 		
 		# self.g_h2 = np.matmul(self.g_h1, self.g_W2) + self.g_b2
 		self.g_h2 = self.g_h1.dot(self.g_W2) + self.g_b2
@@ -112,10 +112,10 @@ class GAN(object):
 		#fake input gradients
 		loss_deriv = d_loss*sigmoid(fake_logit, derivative=True)
 		loss_deriv = loss_deriv.dot(self.d_W2.T)
-		loss_deriv = loss_deriv*relu(self.d_h1, derivative=True)
+		loss_deriv = loss_deriv*lrelu(self.d_h1, derivative=True)
 
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
-		loss_deriv = loss_deriv*relu(self.d_h0, derivative=True)		
+		loss_deriv = loss_deriv*lrelu(self.d_h0, derivative=True)		
 		
 		loss_deriv = loss_deriv.dot(self.d_W0.T)
 		loss_deriv = loss_deriv*tanh(self.g_h2, derivative=True)
@@ -128,14 +128,14 @@ class GAN(object):
 		grad_b2 = np.mean(loss_deriv_, axis=0)	
 
 		loss_deriv = loss_deriv.dot(self.g_W2.T)
-		loss_deriv = loss_deriv*relu(self.g_h1, derivative=True)
+		loss_deriv = loss_deriv*lrelu(self.g_h1, derivative=True)
 		prev_layer = np.expand_dims(self.g_h0, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_W1 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)
 		grad_b1 = np.mean(loss_deriv_, axis=0)		
 
 		loss_deriv = loss_deriv.dot(self.g_W1.T)
-		loss_deriv = loss_deriv*relu(self.g_h0, derivative=True)
+		loss_deriv = loss_deriv*lrelu(self.g_h0, derivative=True)
 		prev_layer = np.expand_dims(self.z, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_W0 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)
@@ -197,14 +197,14 @@ class GAN(object):
 		grad_real_b2 = np.mean(loss_deriv_, axis=0) 
 
 		loss_deriv = loss_deriv.dot(self.d_W2.T)
-		loss_deriv = loss_deriv*relu(self.d_h1, derivative=True)
+		loss_deriv = loss_deriv*lrelu(self.d_h1, derivative=True)
 		prev_layer = np.expand_dims(self.d_h0, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_real_W1 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)#self.d_h0.T.dot(loss_deriv)
 		grad_real_b1 = np.mean(loss_deriv_, axis=0)
 			
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
-		loss_deriv = loss_deriv*relu(self.d_h0, derivative=True)
+		loss_deriv = loss_deriv*lrelu(self.d_h0, derivative=True)
 		prev_layer = np.expand_dims(real_input, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_real_W0 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)#real_input.T.dot(loss_deriv)
@@ -218,14 +218,14 @@ class GAN(object):
 		grad_fake_b2 = np.mean(loss_deriv_, axis=0) 
 
 		loss_deriv = loss_deriv.dot(self.d_W2.T)
-		loss_deriv = loss_deriv*relu(self.d_h1, derivative=True)
+		loss_deriv = loss_deriv*lrelu(self.d_h1, derivative=True)
 		prev_layer = np.expand_dims(self.d_h0, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_fake_W1 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)#self.d_h0.T.dot(loss_deriv)
 		grad_fake_b1 = np.mean(loss_deriv_, axis=0)
 			
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
-		loss_deriv = loss_deriv*relu(self.d_h0, derivative=True)
+		loss_deriv = loss_deriv*lrelu(self.d_h0, derivative=True)
 		prev_layer = np.expand_dims(fake_input, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_fake_W0 = np.mean(np.matmul(prev_layer,loss_deriv_), axis=0)#real_input.T.dot(loss_deriv)

@@ -42,7 +42,7 @@ def img_tile(imgs, path, epoch, step, aspect_ratio=1.0, tile_shape=None, border=
 			tile_img[yoff:yoff+img_shape[0], xoff:xoff+img_shape[1], ...] = img 
 
 
-	tile_img = cv2.resize(tile_img, (224,224))
+	tile_img = cv2.resize(tile_img, (512,512))
 	cv2.imshow("res", tile_img)
 	cv2.waitKey(1)
 	
@@ -112,6 +112,15 @@ def lrelu(input, alpha=0.02, derivative=False):
 def tanh(input, derivative=False):
 	res = np.tanh(input)
 	if derivative:
-		return 1 - np.tanh(input) ** 2
+		return 1.0 - np.tanh(input) ** 2
 
 	return res
+
+
+def instance_norm(input):
+    epsilon = 1e-9
+    
+    mean = np.mean(input, axis=0)
+    var = np.var(input, axis=0)
+
+    return (input - mean)/np.sqrt(var + epsilon)

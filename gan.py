@@ -25,24 +25,24 @@ class GAN(object):
 		self.timestep = 0
 
 		#init generator weights (xavier init)
-		self.g_W0 = np.random.randn(100,150).astype(np.float32) * np.sqrt(2.0/(100))
-		self.g_b0 = np.zeros(150).astype(np.float32)
+		self.g_W0 = np.random.randn(100,300).astype(np.float32) * np.sqrt(2.0/(100))
+		self.g_b0 = np.zeros(300).astype(np.float32)
 
-		self.g_W1 = np.random.randn(150,200).astype(np.float32) * np.sqrt(2.0/(150))
-		self.g_b1 = np.zeros(200).astype(np.float32)
+		self.g_W1 = np.random.randn(300,600).astype(np.float32) * np.sqrt(2.0/(300))
+		self.g_b1 = np.zeros(600).astype(np.float32)
 		
-		self.g_W2 = np.random.randn(200,28*28).astype(np.float32) * np.sqrt(2.0/(200))
+		self.g_W2 = np.random.randn(600,28*28).astype(np.float32) * np.sqrt(2.0/(600))
 		self.g_b2 = np.zeros(28*28).astype(np.float32)
 		
 
 		#init discriminator weights (xavier init)
-		self.d_W0 = np.random.randn(28*28,100).astype(np.float32) * np.sqrt(2.0/(28*28))
-		self.d_b0 = np.zeros(100).astype(np.float32)
+		self.d_W0 = np.random.randn(28*28,500).astype(np.float32) * np.sqrt(2.0/(28*28))
+		self.d_b0 = np.zeros(500).astype(np.float32)
 
-		self.d_W1 = np.random.randn(100,100).astype(np.float32) * np.sqrt(2.0/(100))
-		self.d_b1 = np.zeros(100).astype(np.float32)
+		self.d_W1 = np.random.randn(500,250).astype(np.float32) * np.sqrt(2.0/(500))
+		self.d_b1 = np.zeros(250).astype(np.float32)
 		
-		self.d_W2 = np.random.randn(100,1).astype(np.float32) * np.sqrt(2.0/(100))
+		self.d_W2 = np.random.randn(250,1).astype(np.float32) * np.sqrt(2.0/(250))
 		self.d_b2 = np.zeros(1).astype(np.float32)
 
 		#Adam Optimizer Vars for the Discriminator
@@ -199,14 +199,14 @@ class GAN(object):
 
 		#make update 
 		#d_W0 and d_b0
-		self.g_W0 = self.g_W0 - self.learning_rate*(g_w0_m_corrected/(np.sqrt(g_w0_v_corrected)+epsilon))
-		self.g_b0 = self.g_b0 - self.learning_rate*(g_b0_m_corrected/(np.sqrt(g_b0_v_corrected)+epsilon))
+		self.g_W0 = self.g_W0 - self.learning_rate*grad_W0#(g_w0_m_corrected/(np.sqrt(g_w0_v_corrected)+epsilon))
+		self.g_b0 = self.g_b0 - self.learning_rate*grad_b0#(g_b0_m_corrected/(np.sqrt(g_b0_v_corrected)+epsilon))
 
-		self.g_W1 = self.g_W1 - self.learning_rate*(g_w1_m_corrected/(np.sqrt(g_w1_v_corrected)+epsilon))
-		self.g_b1 = self.g_b1 - self.learning_rate*(g_b1_m_corrected/(np.sqrt(g_b1_v_corrected)+epsilon))
+		self.g_W1 = self.g_W1 - self.learning_rate*grad_W1#(g_w1_m_corrected/(np.sqrt(g_w1_v_corrected)+epsilon))
+		self.g_b1 = self.g_b1 - self.learning_rate*grad_b1#(g_b1_m_corrected/(np.sqrt(g_b1_v_corrected)+epsilon))
 
-		self.g_W2 = self.g_W2 - self.learning_rate*(g_w2_m_corrected/(np.sqrt(g_w2_v_corrected)+epsilon))
-		self.g_b2 = self.g_b2 - self.learning_rate*(g_b2_m_corrected/(np.sqrt(g_b2_v_corrected)+epsilon))
+		self.g_W2 = self.g_W2 - self.learning_rate*grad_W2#(g_w2_m_corrected/(np.sqrt(g_w2_v_corrected)+epsilon))
+		self.g_b2 = self.g_b2 - self.learning_rate*grad_b2#(g_b2_m_corrected/(np.sqrt(g_b2_v_corrected)+epsilon))
 
 	# discriminator backpropagation
 	def backprop_dis(self, 
@@ -335,14 +335,14 @@ class GAN(object):
 
 		#make update 
 		#d_W0 and d_b0
-		self.d_W0 = self.d_W0 - self.learning_rate*(d_w0_m_corrected/(np.sqrt(d_w0_v_corrected)+epsilon))
-		self.d_b0 = self.d_b0 - self.learning_rate*(d_b0_m_corrected/(np.sqrt(d_b0_v_corrected)+epsilon))
+		self.d_W0 = self.d_W0 - self.learning_rate*grad_W0#(d_w0_m_corrected/(np.sqrt(d_w0_v_corrected)+epsilon))
+		self.d_b0 = self.d_b0 - self.learning_rate*grad_b0#(d_b0_m_corrected/(np.sqrt(d_b0_v_corrected)+epsilon))
 
-		self.d_W1 = self.d_W1 - self.learning_rate*(d_w1_m_corrected/(np.sqrt(d_w1_v_corrected)+epsilon))
-		self.d_b1 = self.d_b1 - self.learning_rate*(d_b1_m_corrected/(np.sqrt(d_b1_v_corrected)+epsilon))
+		self.d_W1 = self.d_W1 - self.learning_rate*grad_W1#(d_w1_m_corrected/(np.sqrt(d_w1_v_corrected)+epsilon))
+		self.d_b1 = self.d_b1 - self.learning_rate*grad_b1#(d_b1_m_corrected/(np.sqrt(d_b1_v_corrected)+epsilon))
 
-		self.d_W2 = self.d_W2 - self.learning_rate*(d_w2_m_corrected/(np.sqrt(d_w2_v_corrected)+epsilon))
-		self.d_b2 = self.d_b2 - self.learning_rate*(d_b2_m_corrected/(np.sqrt(d_b2_v_corrected)+epsilon))
+		self.d_W2 = self.d_W2 - self.learning_rate*grad_W2#(d_w2_m_corrected/(np.sqrt(d_w2_v_corrected)+epsilon))
+		self.d_b2 = self.d_b2 - self.learning_rate*grad_b2#(d_b2_m_corrected/(np.sqrt(d_b2_v_corrected)+epsilon))
 
 
 	def train(self):
@@ -358,8 +358,8 @@ class GAN(object):
 			for idx in range(batch_idx):
 				#prepare batch and input vector z
 				train_batch = trainX[idx*self.batch_size:idx*self.batch_size + self.batch_size]
-				z = np.random.uniform(-1,1,[self.batch_size,100])
-				#z = np.random.randn(self.batch_size, 100).astype(np.float32)
+				#z = np.random.uniform(-1,1,[self.batch_size,100])
+				z = np.random.randn(self.batch_size, 100).astype(np.float32) * np.sqrt(2.0/(100))
 
 				#process each element in the batch
 				g_loss_sum, d_loss_sum = 0.0, 0.0

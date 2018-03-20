@@ -13,11 +13,11 @@ class GAN(object):
 	def __init__(self):
 		self.batch_size = 36
 		self.epochs = 500
-		self.learning_rate = 0.000002
+		self.learning_rate = 0.0001
 
 		#save result every 5000 steps
 		#batch of image is processed each step
-		self.checkpoint = 1
+		
 		self.img_path = "./images"
 		if not os.path.exists(self.img_path):
 			os.makedirs(self.img_path)
@@ -25,24 +25,24 @@ class GAN(object):
 		self.timestep = 0
 
 		#init generator weights (xavier init)
-		self.g_W0 = np.random.randn(100,300).astype(np.float32) * np.sqrt(2.0/(100))
-		self.g_b0 = np.zeros(300).astype(np.float32)
+		self.g_W0 = np.random.randn(100,256).astype(np.float32) * np.sqrt(2.0/(100))
+		self.g_b0 = np.zeros(256).astype(np.float32)
 
-		self.g_W1 = np.random.randn(300,600).astype(np.float32) * np.sqrt(2.0/(300))
-		self.g_b1 = np.zeros(600).astype(np.float32)
+		self.g_W1 = np.random.randn(256,512).astype(np.float32) * np.sqrt(2.0/(256))
+		self.g_b1 = np.zeros(512).astype(np.float32)
 		
-		self.g_W2 = np.random.randn(600,28*28).astype(np.float32) * np.sqrt(2.0/(600))
+		self.g_W2 = np.random.randn(512,28*28).astype(np.float32) * np.sqrt(2.0/(512))
 		self.g_b2 = np.zeros(28*28).astype(np.float32)
 		
 
 		#init discriminator weights (xavier init)
-		self.d_W0 = np.random.randn(28*28,500).astype(np.float32) * np.sqrt(2.0/(28*28))
-		self.d_b0 = np.zeros(500).astype(np.float32)
+		self.d_W0 = np.random.randn(28*28,512).astype(np.float32) * np.sqrt(2.0/(28*28))
+		self.d_b0 = np.zeros(512).astype(np.float32)
 
-		self.d_W1 = np.random.randn(500,250).astype(np.float32) * np.sqrt(2.0/(500))
-		self.d_b1 = np.zeros(250).astype(np.float32)
+		self.d_W1 = np.random.randn(512,256).astype(np.float32) * np.sqrt(2.0/(512))
+		self.d_b1 = np.zeros(256).astype(np.float32)
 		
-		self.d_W2 = np.random.randn(250,1).astype(np.float32) * np.sqrt(2.0/(250))
+		self.d_W2 = np.random.randn(256,1).astype(np.float32) * np.sqrt(2.0/(256))
 		self.d_b2 = np.zeros(1).astype(np.float32)
 
 		#Adam Optimizer Vars for the Discriminator
@@ -72,7 +72,7 @@ class GAN(object):
 		#self.d_h{num}_a : hidden activation layer
 
 		self.d_input = np.reshape(img, (self.batch_size,-1))
-		
+
 		self.d_h0_l = self.d_input.dot(self.d_W0) + self.d_b0
 		self.d_h0_a = lrelu(self.d_h0_l)
 
@@ -89,21 +89,21 @@ class GAN(object):
 		
 		self.z = np.reshape(z, (self.batch_size, -1))
 
-		self.g_h0_l = z.dot(self.g_W0) + self.g_b0
+		self.g_h0_l = self.z.dot(self.g_W0) + self.g_b0
 		self.g_h0_a = lrelu(self.g_h0_l)
 
 		self.g_h1_l = self.g_h0_a.dot(self.g_W1) + self.g_b1
 		self.g_h1_a = lrelu(self.g_h1_l)
 		
 		self.g_h2_l = self.g_h1_a.dot(self.g_W2) + self.g_b2
-		self.g_out = tanh(self.g_h2_l)
+		self.g_h2_a = tanh(self.g_h2_l)
 
-		self.g_out = np.reshape(self.g_out, (self.batch_size, 28, 28))
+		self.g_out = np.reshape(self.g_h2_a, (self.batch_size, 28, 28, 1))
 		
 		return self.g_h2_l, self.g_out
 
 	# generator backpropagation
-	def backprop_gen(self, fake_logit, fake_sig_output, fake_input):
+	def backprop_gen(self, fake_logit, fake_output, fake_input):
 		#fake_logit : logit output from the discriminator D(G(z))
 		#fake_sig_output : sigmoid output from the discriminator D(G(z))
 		
@@ -111,11 +111,11 @@ class GAN(object):
 		fake_input = np.reshape(fake_input, (self.batch_size,-1))
 
 		#calculate the derivative of the loss term -log(D(G(z)))
-		g_loss = np.reshape(fake_sig_output, (self.batch_size, -1))
-		g_loss = -1.0/(g_loss+epsilon)
+		g_loss = np.reshape(fake_output, (self.batch_size, -1))
+		g_loss = -1.0/(g_loss+ epsilon)
 
-		#calculate gradients from the end of the discriminator
-		#we calculate them but won't update the discriminator weights
+		# calculate the gradients from the end of the discriminator
+		# we calculate them but won't update the discriminator weights
 		#######################################
 		#		fake input gradients
 		#		-log(D(G(z)))
@@ -175,38 +175,38 @@ class GAN(object):
 		self.g_b2_v = (beta2 * self.g_b2_v) + (1.0 - beta2) * (grad_b2 ** 2)
 
 
-		#corrected
-		#g_W0
-		g_w0_m_corrected = self.g_w0_m/(1-(beta1**self.timestep)+epsilon)
-		g_w0_v_corrected = self.g_w0_v/(1-(beta2**self.timestep)+epsilon)
-		#g_b0
-		g_b0_m_corrected = self.g_b0_m/(1-(beta1**self.timestep)+epsilon)
-		g_b0_v_corrected = self.g_b0_v/(1-(beta2**self.timestep)+epsilon)
+		# #corrected
+		# #g_W0
+		# g_w0_m_corrected = self.g_w0_m/(1-(beta1**self.timestep)+epsilon)
+		# g_w0_v_corrected = self.g_w0_v/(1-(beta2**self.timestep)+epsilon)
+		# #g_b0
+		# g_b0_m_corrected = self.g_b0_m/(1-(beta1**self.timestep)+epsilon)
+		# g_b0_v_corrected = self.g_b0_v/(1-(beta2**self.timestep)+epsilon)
 
-		#g_W0
-		g_w1_m_corrected = self.g_w1_m/(1-(beta1**self.timestep)+epsilon)
-		g_w1_v_corrected = self.g_w1_v/(1-(beta2**self.timestep)+epsilon)
-		#g_b0
-		g_b1_m_corrected = self.g_b1_m/(1-(beta1**self.timestep)+epsilon)
-		g_b1_v_corrected = self.g_b1_v/(1-(beta2**self.timestep)+epsilon)
+		# #g_W0
+		# g_w1_m_corrected = self.g_w1_m/(1-(beta1**self.timestep)+epsilon)
+		# g_w1_v_corrected = self.g_w1_v/(1-(beta2**self.timestep)+epsilon)
+		# #g_b0
+		# g_b1_m_corrected = self.g_b1_m/(1-(beta1**self.timestep)+epsilon)
+		# g_b1_v_corrected = self.g_b1_v/(1-(beta2**self.timestep)+epsilon)
 
-		#g_W2
-		g_w2_m_corrected = self.g_w2_m/(1-(beta1**self.timestep)+epsilon)
-		g_w2_v_corrected = self.g_w2_v/(1-(beta2**self.timestep)+epsilon)
-		#g_b2
-		g_b2_m_corrected = self.g_b2_m/(1-(beta1**self.timestep)+epsilon)
-		g_b2_v_corrected = self.g_b2_v/(1-(beta2**self.timestep)+epsilon)
+		# #g_W2
+		# g_w2_m_corrected = self.g_w2_m/(1-(beta1**self.timestep)+epsilon)
+		# g_w2_v_corrected = self.g_w2_v/(1-(beta2**self.timestep)+epsilon)
+		# #g_b2
+		# g_b2_m_corrected = self.g_b2_m/(1-(beta1**self.timestep)+epsilon)
+		# g_b2_v_corrected = self.g_b2_v/(1-(beta2**self.timestep)+epsilon)
 
 		#make update 
 		#d_W0 and d_b0
-		self.g_W0 = self.g_W0 - self.learning_rate*grad_W0#(g_w0_m_corrected/(np.sqrt(g_w0_v_corrected)+epsilon))
-		self.g_b0 = self.g_b0 - self.learning_rate*grad_b0#(g_b0_m_corrected/(np.sqrt(g_b0_v_corrected)+epsilon))
+		self.g_W0 = self.g_W0 - self.learning_rate*(self.g_w0_m/(np.sqrt(self.g_w0_v)+epsilon))
+		self.g_b0 = self.g_b0 - self.learning_rate*(self.g_b0_m/(np.sqrt(self.g_b0_v)+epsilon))
 
-		self.g_W1 = self.g_W1 - self.learning_rate*grad_W1#(g_w1_m_corrected/(np.sqrt(g_w1_v_corrected)+epsilon))
-		self.g_b1 = self.g_b1 - self.learning_rate*grad_b1#(g_b1_m_corrected/(np.sqrt(g_b1_v_corrected)+epsilon))
+		self.g_W1 = self.g_W1 - self.learning_rate*(self.g_w1_m/(np.sqrt(self.g_w1_v)+epsilon))
+		self.g_b1 = self.g_b1 - self.learning_rate*(self.g_b1_m/(np.sqrt(self.g_b1_v)+epsilon))
 
-		self.g_W2 = self.g_W2 - self.learning_rate*grad_W2#(g_w2_m_corrected/(np.sqrt(g_w2_v_corrected)+epsilon))
-		self.g_b2 = self.g_b2 - self.learning_rate*grad_b2#(g_b2_m_corrected/(np.sqrt(g_b2_v_corrected)+epsilon))
+		self.g_W2 = self.g_W2 - self.learning_rate*(self.g_w2_m/(np.sqrt(self.g_w2_v)+epsilon))
+		self.g_b2 = self.g_b2 - self.learning_rate*(self.g_b2_m/(np.sqrt(self.g_b2_v)+epsilon))
 
 	# discriminator backpropagation
 	def backprop_dis(self, 
@@ -222,9 +222,10 @@ class GAN(object):
 		real_input = np.reshape(real_input, (self.batch_size,-1))
 		fake_input = np.reshape(fake_input, (self.batch_size,-1))
 
+		#loss = -np.mean(log(D(x)) - log(1-D(G(z)))) 
 		#Calculate gradients of the loss(amount to move)
-		d_real_loss = -1.0/(real_output+epsilon)
-		d_fake_loss = -1.0/(fake_output - 1.0+epsilon)
+		d_real_loss = -1.0/(real_output + epsilon)
+		d_fake_loss = -1.0/(fake_output - 1.0 + epsilon)
 
 		#start from the error in the last layer
 		#######################################
@@ -311,38 +312,38 @@ class GAN(object):
 		self.d_b2_v = (beta2 * self.d_b2_v) + (1.0 - beta2) * (grad_b2 ** 2)
 
 
-		#corrected
-		#g_W0
-		d_w0_m_corrected = self.d_w0_m/(1-(beta1**self.timestep)+epsilon)
-		d_w0_v_corrected = self.d_w0_v/(1-(beta2**self.timestep)+epsilon)
-		#g_b0
-		d_b0_m_corrected = self.d_b0_m/(1-(beta1**self.timestep)+epsilon)
-		d_b0_v_corrected = self.d_b0_v/(1-(beta2**self.timestep)+epsilon)
+		# #corrected
+		# #g_W0
+		# d_w0_m_corrected = self.d_w0_m/(1-(beta1**self.timestep)+epsilon)
+		# d_w0_v_corrected = self.d_w0_v/(1-(beta2**self.timestep)+epsilon)
+		# #g_b0
+		# d_b0_m_corrected = self.d_b0_m/(1-(beta1**self.timestep)+epsilon)
+		# d_b0_v_corrected = self.d_b0_v/(1-(beta2**self.timestep)+epsilon)
 
-		#g_W0
-		d_w1_m_corrected = self.d_w1_m/(1-(beta1**self.timestep)+epsilon)
-		d_w1_v_corrected = self.d_w1_v/(1-(beta2**self.timestep)+epsilon)
-		#g_b0
-		d_b1_m_corrected = self.d_b1_m/(1-(beta1**self.timestep)+epsilon)
-		d_b1_v_corrected = self.d_b1_v/(1-(beta2**self.timestep)+epsilon)
+		# #g_W0
+		# d_w1_m_corrected = self.d_w1_m/(1-(beta1**self.timestep)+epsilon)
+		# d_w1_v_corrected = self.d_w1_v/(1-(beta2**self.timestep)+epsilon)
+		# #g_b0
+		# d_b1_m_corrected = self.d_b1_m/(1-(beta1**self.timestep)+epsilon)
+		# d_b1_v_corrected = self.d_b1_v/(1-(beta2**self.timestep)+epsilon)
 
-		#g_W2
-		d_w2_m_corrected = self.d_w2_m/(1-(beta1**self.timestep)+epsilon)
-		d_w2_v_corrected = self.d_w2_v/(1-(beta2**self.timestep)+epsilon)
-		#g_b2
-		d_b2_m_corrected = self.d_b2_m/(1-(beta1**self.timestep)+epsilon)
-		d_b2_v_corrected = self.d_b2_v/(1-(beta2**self.timestep)+epsilon)
+		# #g_W2
+		# d_w2_m_corrected = self.d_w2_m/(1-(beta1**self.timestep)+epsilon)
+		# d_w2_v_corrected = self.d_w2_v/(1-(beta2**self.timestep)+epsilon)
+		# #g_b2
+		# d_b2_m_corrected = self.d_b2_m/(1-(beta1**self.timestep)+epsilon)
+		# d_b2_v_corrected = self.d_b2_v/(1-(beta2**self.timestep)+epsilon)
 
-		#make update 
+		#make updates
 		#d_W0 and d_b0
-		self.d_W0 = self.d_W0 - self.learning_rate*grad_W0#(d_w0_m_corrected/(np.sqrt(d_w0_v_corrected)+epsilon))
-		self.d_b0 = self.d_b0 - self.learning_rate*grad_b0#(d_b0_m_corrected/(np.sqrt(d_b0_v_corrected)+epsilon))
+		self.d_W0 = self.d_W0 - self.learning_rate*(self.d_w0_m/(np.sqrt(self.d_w0_v)+epsilon))
+		self.d_b0 = self.d_b0 - self.learning_rate*(self.d_b0_m/(np.sqrt(self.d_b0_v)+epsilon))
 
-		self.d_W1 = self.d_W1 - self.learning_rate*grad_W1#(d_w1_m_corrected/(np.sqrt(d_w1_v_corrected)+epsilon))
-		self.d_b1 = self.d_b1 - self.learning_rate*grad_b1#(d_b1_m_corrected/(np.sqrt(d_b1_v_corrected)+epsilon))
+		self.d_W1 = self.d_W1 - self.learning_rate*(self.d_w1_m/(np.sqrt(self.d_w1_v)+epsilon))
+		self.d_b1 = self.d_b1 - self.learning_rate*(self.d_b1_m/(np.sqrt(self.d_b1_v)+epsilon))
 
-		self.d_W2 = self.d_W2 - self.learning_rate*grad_W2#(d_w2_m_corrected/(np.sqrt(d_w2_v_corrected)+epsilon))
-		self.d_b2 = self.d_b2 - self.learning_rate*grad_b2#(d_b2_m_corrected/(np.sqrt(d_b2_v_corrected)+epsilon))
+		self.d_W2 = self.d_W2 - self.learning_rate*(self.d_w2_m/(np.sqrt(self.d_w2_v)+epsilon))
+		self.d_b2 = self.d_b2 - self.learning_rate*(self.d_b2_m/(np.sqrt(self.d_b2_v)+epsilon))
 
 
 	def train(self):
@@ -352,54 +353,61 @@ class GAN(object):
 		trainX, _, train_size = mnist_reader()
 		
 		total_step = 0
+		decay = 0.001
+		
 		#set batch indices
 		batch_idx = train_size//self.batch_size
 		for epoch in range(self.epochs):
 			for idx in range(batch_idx):
-				#prepare batch and input vector z
+				# prepare batch and input vector z
 				train_batch = trainX[idx*self.batch_size:idx*self.batch_size + self.batch_size]
-				#z = np.random.uniform(-1,1,[self.batch_size,100])
-				z = np.random.randn(self.batch_size, 100).astype(np.float32) * np.sqrt(2.0/(100))
-
-				#process each element in the batch
-				g_loss_sum, d_loss_sum = 0.0, 0.0
 				
-				#forward pass
+				#z = np.random.uniform(-1,1,[self.batch_size,100])
+				z = np.random.randn(self.batch_size, 100).astype(np.float32) * np.sqrt(2.0/(self.batch_size))
+
+				
+				# Forward pass
 				g_logits, fake_img = self.generator(z)
 
 				d_real_logits, d_real_output = self.discriminator(train_batch)
 				d_fake_logits, d_fake_output = self.discriminator(fake_img)
 
-				#cross entropy loss using sigmoid output
-				#add epsilon in log to avoid overflow
-				#maximize Discriminator loss = -np.mean(log(D(x)) + log(1-D(G(z))))
+				# cross entropy loss using sigmoid output
+				# add epsilon in log to avoid overflow
+				# maximize Discriminator loss = -np.mean(log(D(x)) - log(1-D(G(z))))
 				d_loss = -np.log(d_real_output+epsilon) - np.log(1 - d_fake_output+epsilon)
 				
-				#Generator loss 
-				#ver1 : minimize log(1 - D(G(z)))
-				#ver2 : maximize -log(D(G(z))) #this is better
+				# Generator loss 
+				# ver1 : minimize log(1 - D(G(z)))
+				# ver2 : maximize -log(D(G(z))) #this is better
 				g_loss = -np.log(d_fake_output+epsilon)
 
-				# #train discriminator
-				# #one for fake input, another for real input
+
+				# Backward pass
+				# train discriminator
+				# one for fake input, another for real input
 				self.backprop_dis(d_real_logits, d_real_output, train_batch, d_fake_logits, d_fake_output, fake_img)
 				
 				# #train generator 
 				self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 
-				# #train generator twice?
-				# g_logits, fake_img = self.generator(z)
-				# d_fake_logits, d_fake_output = self.discriminator(fake_img)
-				# self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
+				# train generator twice?
+				g_logits, fake_img = self.generator(z)
+				d_fake_logits, d_fake_output = self.discriminator(fake_img)
+				self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
+
+
 				
-				if total_step%self.checkpoint == 0:
-					img_tile(np.array(fake_img), self.img_path, epoch, idx)
+				img_tile(np.array(fake_img), self.img_path, epoch, idx, "res", False)
+				self.img = fake_img
 
-
-				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f"%(epoch, idx, np.mean(g_loss), np.mean(d_loss))
+				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f Real Ave.: %.4f Fake Ave.: %.4f"%(epoch, idx, np.mean(g_loss), np.mean(d_loss), np.mean(d_real_output), np.mean(d_fake_output))
 				total_step += 1
 				self.timestep += 1
 
+			self.learning_rate = self.learning_rate*(1/(1+decay*epoch))
+			#save image result
+			img_tile(np.array(self.img), self.img_path, epoch, idx, "res", True)
 
 
 gan = GAN()

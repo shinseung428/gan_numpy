@@ -2,7 +2,7 @@ import numpy as np
 from PIL import Image
 import cv2
 
-def img_tile(imgs, path, epoch, step, aspect_ratio=1.0, tile_shape=None, border=1, border_color=0):
+def img_tile(imgs, path, epoch, step, name, save, aspect_ratio=1.0, tile_shape=None, border=1, border_color=0):
 	if imgs.ndim != 3 and imgs.ndim != 4:
 		raise ValueError('imgs has wrong number of dimensions.')
 	n_imgs = imgs.shape[0]
@@ -43,9 +43,11 @@ def img_tile(imgs, path, epoch, step, aspect_ratio=1.0, tile_shape=None, border=
 
 
 	tile_img = cv2.resize(tile_img, (512,512))
-	cv2.imshow("res", tile_img)
+	cv2.imshow(name, tile_img)
 	cv2.waitKey(1)
 	
+	if save:
+		cv2.imwrite(path + "/epoch_%03d"%(epoch)+".jpg", tile_img*255)
 
 def mnist_reader():
 	def one_hot(label, output_dim):
@@ -99,7 +101,7 @@ def relu(input, derivative=False):
 		return 1.0 * (res > 0)
 	
 
-def lrelu(input, alpha=0.02, derivative=False):
+def lrelu(input, alpha=0.01, derivative=False):
 	res = input
 	if not derivative:
 		# return res * (res > 0)

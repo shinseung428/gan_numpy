@@ -2,6 +2,53 @@ import numpy as np
 from PIL import Image
 import cv2
 
+####################################
+#		Activation Functions
+####################################
+def sigmoid(input, derivative=False):
+	# for batch in input:
+	res = 1/(1+np.exp(-input))
+
+	if derivative:
+		return res*(1-res)
+
+	return res
+
+def relu(input, derivative=False):
+	res = input
+	if derivative:
+		return 1.0 * (res > 0)
+	else:
+		return res * (res > 0)
+		# return np.maximum(input, 0, input) # ver. 2		
+	
+
+def lrelu(input, alpha=0.01, derivative=False):
+	res = input
+	if derivative:
+		dx = np.ones_like(res)
+		dx[res < 0] = alpha
+		return dx
+	else:
+		return np.maximum(input, input*alpha, input)
+
+def tanh(input, derivative=False):
+	res = np.tanh(input)
+	if derivative:
+		return 1.0 - np.tanh(input) ** 2
+	return res
+
+##############################################################################
+
+def instance_norm(input):
+    epsilon = 1e-9
+    
+    mean = np.mean(input, axis=0)
+    var = np.var(input, axis=0)
+
+    return (input - mean)/np.sqrt(var + epsilon)
+
+
 def img_tile(imgs, path, epoch, step, name, save, aspect_ratio=1.0, tile_shape=None, border=1, border_color=0):
 	if imgs.ndim != 3 and imgs.ndim != 4:
 		raise ValueError('imgs has wrong number of dimensions.')
@@ -70,59 +117,15 @@ def mnist_reader():
 	trainY = loaded[8:].reshape((60000)).astype(np.int32)
 	trainY = one_hot(trainY, 10)
 
-
-	# #Test Data
-	# f = open('./data/t10k-images.idx3-ubyte')
-	# loaded = np.fromfile(file=f, dtype=np.uint8)
-	# testX = loaded[16:].reshape((10000, 28, 28, 1)).astype(np.float32) / / 127.5 - 1
-
-	# f = open('./data/t10k-labels.idx1-ubyte')
-	# loaded = np.fromfile(file=f, dtype=np.uint8)
-	# testY = loaded[8:].reshape((10000)).astype(np.int32)
-	# testY = one_hot(testY, 10)
-
-	return trainX, trainY, len(trainX) #, testX, testY, len(testX)
-
-def sigmoid(input, derivative=False):
-	# for batch in input:
-	res = 1/(1+np.exp(-input))
-
-	if derivative:
-		return res*(1-res)
-
-	return res
-
-def relu(input, derivative=False):
-	res = input
-	if not derivative:
-		return res * (res > 0)
-		# return np.maximum(input, 0, input)
-	else:
-		return 1.0 * (res > 0)
-	
-
-def lrelu(input, alpha=0.01, derivative=False):
-	res = input
-	if not derivative:
-		# return res * (res > 0)
-		return np.maximum(input, input*alpha, input)
-	else:
-		dx = np.ones_like(res)
-		dx[res < 0] = alpha
-		return dx
-
-def tanh(input, derivative=False):
-	res = np.tanh(input)
-	if derivative:
-		return 1.0 - np.tanh(input) ** 2
-
-	return res
+	return trainX, trainY, len(trainX) 
 
 
-def instance_norm(input):
-    epsilon = 1e-9
-    
-    mean = np.mean(input, axis=0)
-    var = np.var(input, axis=0)
 
-    return (input - mean)/np.sqrt(var + epsilon)
+
+
+
+
+
+
+
+

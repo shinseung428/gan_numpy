@@ -42,7 +42,7 @@ def img_tile(imgs, path, epoch, step, name, save, aspect_ratio=1.0, tile_shape=N
 			tile_img[yoff:yoff+img_shape[0], xoff:xoff+img_shape[1], ...] = img 
 
 
-	tile_img = cv2.resize(tile_img, (512,512))
+	tile_img = cv2.resize(tile_img, (256,256))
 	cv2.imshow(name, tile_img)
 	cv2.waitKey(1)
 	

@@ -88,7 +88,11 @@ class GAN(object):
 
 
 	# generator backpropagation
-	def backprop_gen(self, fake_logit, fake_output, fake_input, idx):
+	def backprop_gen(self, 
+					 fake_logit, 
+					 fake_output, 
+					 fake_input, 
+					 idx):
 		# fake_logit : logit output from the discriminator D(G(z))
 		# fake_output : sigmoid output from the discriminator D(G(z))
 		# idx : element to backpropagate
@@ -283,9 +287,7 @@ class GAN(object):
 			for idx in range(batch_idx):
 				# prepare batch and input vector z
 				train_batch = trainX[idx*self.batch_size:idx*self.batch_size + self.batch_size]
-
-				#z = np.random.uniform(-1,1,[self.batch_size,100])
-				z = np.random.randn(self.batch_size, 100).astype(np.float32) * np.sqrt(2.0/(self.batch_size))
+				z = np.random.uniform(-1,1,[self.batch_size,100])
 
 				################################
 				#		Forward Pass
@@ -333,6 +335,10 @@ class GAN(object):
 
 			#save image result every epoch
 			img_tile(np.array(self.img), self.img_path, epoch, idx, "res", True)
+
+
+
+
 
 
 gan = GAN()

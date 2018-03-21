@@ -5,9 +5,6 @@ import cv2
 from utils import *
 
 epsilon = 10e-8
-beta1 = 0.9
-beta2 = 0.999
-
 class GAN(object):
 
 	def __init__(self):
@@ -15,7 +12,8 @@ class GAN(object):
 		self.epochs = 500
 		self.timestep = 1
 		self.learning_rate = 0.0002
-		
+		self.beta1 = 0.9
+		self.beta2 = 0.999
 
 		self.img_path = "./images"
 		if not os.path.exists(self.img_path):
@@ -133,33 +131,33 @@ class GAN(object):
 		# update weights using Adam Optimizer
 		# https://wiseodd.github.io/techblog/2016/06/22/nn-optimization/
 		# g_W0
-		self.g_w0_m = (beta1 * self.g_w0_m) + (1.0 - beta1) * grad_W0
-		self.g_w0_v = (beta2 * self.g_w0_v) + (1.0 - beta2) * (grad_W0 ** 2)
+		self.g_w0_m = (self.beta1 * self.g_w0_m) + (1.0 - self.beta1) * grad_W0
+		self.g_w0_v = (self.beta2 * self.g_w0_v) + (1.0 - self.beta2) * (grad_W0 ** 2)
 		# g_b0
-		self.g_b0_m = (beta1 * self.g_b0_m) + (1.0 - beta1) * grad_b0
-		self.g_b0_v = (beta2 * self.g_b0_v) + (1.0 - beta2) * (grad_b0 ** 2)
+		self.g_b0_m = (self.beta1 * self.g_b0_m) + (1.0 - self.beta1) * grad_b0
+		self.g_b0_v = (self.beta2 * self.g_b0_v) + (1.0 - self.beta2) * (grad_b0 ** 2)
 
 		# g_W1
-		self.g_w1_m = (beta1 * self.g_w1_m) + (1.0 - beta1) * grad_W1
-		self.g_w1_v = (beta2 * self.g_w1_v) + (1.0 - beta2) * (grad_W1 ** 2)
+		self.g_w1_m = (self.beta1 * self.g_w1_m) + (1.0 - self.beta1) * grad_W1
+		self.g_w1_v = (self.beta2 * self.g_w1_v) + (1.0 - self.beta2) * (grad_W1 ** 2)
 		# g_b1
-		self.g_b1_m = (beta1 * self.g_b1_m) + (1.0 - beta1) * grad_b1
-		self.g_b1_v = (beta2 * self.g_b1_v) + (1.0 - beta2) * (grad_b1 ** 2)
+		self.g_b1_m = (self.beta1 * self.g_b1_m) + (1.0 - self.beta1) * grad_b1
+		self.g_b1_v = (self.beta2 * self.g_b1_v) + (1.0 - self.beta2) * (grad_b1 ** 2)
 
 		# corrected
 		# g_W0
-		g_w0_m_corrected = self.g_w0_m/(1-(beta1**self.timestep)+epsilon)
-		g_w0_v_corrected = self.g_w0_v/(1-(beta2**self.timestep)+epsilon)
+		g_w0_m_corrected = self.g_w0_m/(1-(self.beta1**self.timestep)+epsilon)
+		g_w0_v_corrected = self.g_w0_v/(1-(self.beta2**self.timestep)+epsilon)
 		# g_b0
-		g_b0_m_corrected = self.g_b0_m/(1-(beta1**self.timestep)+epsilon)
-		g_b0_v_corrected = self.g_b0_v/(1-(beta2**self.timestep)+epsilon)
+		g_b0_m_corrected = self.g_b0_m/(1-(self.beta1**self.timestep)+epsilon)
+		g_b0_v_corrected = self.g_b0_v/(1-(self.beta2**self.timestep)+epsilon)
 
 		# g_W1
-		g_w1_m_corrected = self.g_w1_m/(1-(beta1**self.timestep)+epsilon)
-		g_w1_v_corrected = self.g_w1_v/(1-(beta2**self.timestep)+epsilon)
+		g_w1_m_corrected = self.g_w1_m/(1-(self.beta1**self.timestep)+epsilon)
+		g_w1_v_corrected = self.g_w1_v/(1-(self.beta2**self.timestep)+epsilon)
 		# g_b1
-		g_b1_m_corrected = self.g_b1_m/(1-(beta1**self.timestep)+epsilon)
-		g_b1_v_corrected = self.g_b1_v/(1-(beta2**self.timestep)+epsilon)
+		g_b1_m_corrected = self.g_b1_m/(1-(self.beta1**self.timestep)+epsilon)
+		g_b1_v_corrected = self.g_b1_v/(1-(self.beta2**self.timestep)+epsilon)
 
 		# make updates
 		self.g_W0 = self.g_W0 - self.learning_rate*(g_w0_m_corrected/(np.sqrt(g_w0_v_corrected)+epsilon))
@@ -236,33 +234,33 @@ class GAN(object):
 		# update weights using Adam Optimizer
 		# https://wiseodd.github.io/techblog/2016/06/22/nn-optimization/
 		# d_W0
-		self.d_w0_m = (beta1 * self.d_w0_m) + (1.0 - beta1) * grad_W0
-		self.d_w0_v = (beta2 * self.d_w0_v) + (1.0 - beta2) * (grad_W0 ** 2)
+		self.d_w0_m = (self.beta1 * self.d_w0_m) + (1.0 - self.beta1) * grad_W0
+		self.d_w0_v = (self.beta2 * self.d_w0_v) + (1.0 - self.beta2) * (grad_W0 ** 2)
 		# d_b0
-		self.d_b0_m = (beta1 * self.d_b0_m) + (1.0 - beta1) * grad_b0
-		self.d_b0_v = (beta2 * self.d_b0_v) + (1.0 - beta2) * (grad_b0 ** 2)
+		self.d_b0_m = (self.beta1 * self.d_b0_m) + (1.0 - self.beta1) * grad_b0
+		self.d_b0_v = (self.beta2 * self.d_b0_v) + (1.0 - self.beta2) * (grad_b0 ** 2)
 
 		# d_W1
-		self.d_w1_m = (beta1 * self.d_w1_m) + (1.0 - beta1) * grad_W1
-		self.d_w1_v = (beta2 * self.d_w1_v) + (1.0 - beta2) * (grad_W1 ** 2)
+		self.d_w1_m = (self.beta1 * self.d_w1_m) + (1.0 - self.beta1) * grad_W1
+		self.d_w1_v = (self.beta2 * self.d_w1_v) + (1.0 - self.beta2) * (grad_W1 ** 2)
 		# d_b1
-		self.d_b1_m = (beta1 * self.d_b1_m) + (1.0 - beta1) * grad_b1
-		self.d_b1_v = (beta2 * self.d_b1_v) + (1.0 - beta2) * (grad_b1 ** 2)
+		self.d_b1_m = (self.beta1 * self.d_b1_m) + (1.0 - self.beta1) * grad_b1
+		self.d_b1_v = (self.beta2 * self.d_b1_v) + (1.0 - self.beta2) * (grad_b1 ** 2)
 
 		# corrected
 		# g_W0
-		d_w0_m_corrected = self.d_w0_m/(1-(beta1**self.timestep)+epsilon)
-		d_w0_v_corrected = self.d_w0_v/(1-(beta2**self.timestep)+epsilon)
+		d_w0_m_corrected = self.d_w0_m/(1-(self.beta1**self.timestep)+epsilon)
+		d_w0_v_corrected = self.d_w0_v/(1-(self.beta2**self.timestep)+epsilon)
 		# g_b0
-		d_b0_m_corrected = self.d_b0_m/(1-(beta1**self.timestep)+epsilon)
-		d_b0_v_corrected = self.d_b0_v/(1-(beta2**self.timestep)+epsilon)
+		d_b0_m_corrected = self.d_b0_m/(1-(self.beta1**self.timestep)+epsilon)
+		d_b0_v_corrected = self.d_b0_v/(1-(self.beta2**self.timestep)+epsilon)
 
 		# g_W1
-		d_w1_m_corrected = self.d_w1_m/(1-(beta1**self.timestep)+epsilon)
-		d_w1_v_corrected = self.d_w1_v/(1-(beta2**self.timestep)+epsilon)
+		d_w1_m_corrected = self.d_w1_m/(1-(self.beta1**self.timestep)+epsilon)
+		d_w1_v_corrected = self.d_w1_v/(1-(self.beta2**self.timestep)+epsilon)
 		# g_b1
-		d_b1_m_corrected = self.d_b1_m/(1-(beta1**self.timestep)+epsilon)
-		d_b1_v_corrected = self.d_b1_v/(1-(beta2**self.timestep)+epsilon)
+		d_b1_m_corrected = self.d_b1_m/(1-(self.beta1**self.timestep)+epsilon)
+		d_b1_v_corrected = self.d_b1_v/(1-(self.beta2**self.timestep)+epsilon)
 
 	
 		# make updates

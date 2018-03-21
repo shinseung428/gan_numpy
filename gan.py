@@ -2,7 +2,7 @@ import numpy as np
 import os
 import cv2
 
-from activations import *
+from utils import *
 
 epsilon = 10e-8
 beta1 = 0.9

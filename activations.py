@@ -6,12 +6,9 @@ import cv2
 #		Activation Functions
 ####################################
 def sigmoid(input, derivative=False):
-	# for batch in input:
 	res = 1/(1+np.exp(-input))
-
 	if derivative:
 		return res*(1-res)
-
 	return res
 
 def relu(input, derivative=False):

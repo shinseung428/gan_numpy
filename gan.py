@@ -92,10 +92,10 @@ class GAN(object):
 					 fake_logit, 
 					 fake_output, 
 					 fake_input, 
-					 idx):
+					 ):
 		# fake_logit : logit output from the discriminator D(G(z))
 		# fake_output : sigmoid output from the discriminator D(G(z))
-		# idx : element to backpropagate
+		
 
 		# flatten fake image input
 		fake_input = np.reshape(fake_input, (self.batch_size,-1))
@@ -106,12 +106,12 @@ class GAN(object):
 
 		# calculate the gradients from the end of the discriminator
 		# we calculate them but won't update the discriminator weights
-		loss_deriv = g_loss[idx]*sigmoid(fake_logit[idx], derivative=True)
+		loss_deriv = g_loss*sigmoid(fake_logit, derivative=True)
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
-		loss_deriv = loss_deriv*lrelu(self.d_h0_l[idx], derivative=True)		
+		loss_deriv = loss_deriv*lrelu(self.d_h0_l, derivative=True)		
 		
 		loss_deriv = loss_deriv.dot(self.d_W0.T)
-		loss_deriv = loss_deriv*tanh(self.g_h1_l[idx], derivative=True)
+		loss_deriv = loss_deriv*tanh(self.g_h1_l, derivative=True)
 		# Reached the end of the generator
 
 		# Calculate generator gradients
@@ -119,16 +119,16 @@ class GAN(object):
 		#		fake input gradients
 		#		-log(D(G(z)))
 		#######################################
-		prev_layer = np.expand_dims(self.g_h0_a[idx], axis=-1)
-		loss_deriv_ = np.expand_dims(loss_deriv, axis=0)
-		grad_W1 = prev_layer.dot(loss_deriv_)
+		prev_layer = np.expand_dims(self.g_h0_a, axis=-1)
+		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
+		grad_W1 = np.matmul(prev_layer,loss_deriv_)
 		grad_b1 = loss_deriv
 
 		loss_deriv = loss_deriv.dot(self.g_W1.T)
-		loss_deriv = loss_deriv*lrelu(self.g_h0_l[idx], derivative=True)
-		prev_layer = np.expand_dims(self.z[idx], axis=-1)
-		loss_deriv_ = np.expand_dims(loss_deriv, axis=0)
-		grad_W0 = prev_layer.dot(loss_deriv_)
+		loss_deriv = loss_deriv*lrelu(self.g_h0_l, derivative=True)
+		prev_layer = np.expand_dims(self.z, axis=-1)
+		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
+		grad_W0 = np.matmul(prev_layer,loss_deriv_)
 		grad_b0 = loss_deriv
 
 
@@ -163,19 +163,21 @@ class GAN(object):
 		g_b1_m_corrected = self.g_b1_m/(1-(self.beta1**self.timestep)+epsilon)
 		g_b1_v_corrected = self.g_b1_v/(1-(self.beta2**self.timestep)+epsilon)
 
-		# make updates
-		self.g_W0 = self.g_W0 - self.learning_rate*(g_w0_m_corrected/(np.sqrt(g_w0_v_corrected)+epsilon))
-		self.g_b0 = self.g_b0 - self.learning_rate*(g_b0_m_corrected/(np.sqrt(g_b0_v_corrected)+epsilon))
+		# calculated all the gradients in the batch 
+		# now make updates
+		for idx in range(self.batch_size):
+			self.g_W0 = self.g_W0 - self.learning_rate*(g_w0_m_corrected[idx]/(np.sqrt(g_w0_v_corrected[idx])+epsilon))
+			self.g_b0 = self.g_b0 - self.learning_rate*(g_b0_m_corrected[idx]/(np.sqrt(g_b0_v_corrected[idx])+epsilon))
 
-		self.g_W1 = self.g_W1 - self.learning_rate*(g_w1_m_corrected/(np.sqrt(g_w1_v_corrected)+epsilon))
-		self.g_b1 = self.g_b1 - self.learning_rate*(g_b1_m_corrected/(np.sqrt(g_b1_v_corrected)+epsilon))
+			self.g_W1 = self.g_W1 - self.learning_rate*(g_w1_m_corrected[idx]/(np.sqrt(g_w1_v_corrected[idx])+epsilon))
+			self.g_b1 = self.g_b1 - self.learning_rate*(g_b1_m_corrected[idx]/(np.sqrt(g_b1_v_corrected[idx])+epsilon))
 
 
 	# discriminator backpropagation
 	def backprop_dis(self, 
 					 real_logit, real_output, real_input, 
 					 fake_logit, fake_output, fake_input,
-					 idx):
+					 ):
 		# real_logit : real logit value before sigmoid activation function (real input)
 		# real_output : Discriminator output in range 0~1 (real input)
 		# real_input : real input image fed into the discriminator
@@ -196,34 +198,34 @@ class GAN(object):
 		#		real input gradients
 		#		-log(D(x))
 		#######################################
-		loss_deriv = d_real_loss[idx]*sigmoid(real_logit[idx], derivative=True)
-		prev_layer = np.expand_dims(self.d_h0_a[idx], axis=-1)
-		loss_deriv_ = np.expand_dims(loss_deriv, axis=0)
-		grad_real_W1 =  prev_layer.dot(loss_deriv_)
+		loss_deriv = d_real_loss*sigmoid(real_logit, derivative=True)
+		prev_layer = np.expand_dims(self.d_h0_a, axis=-1)
+		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
+		grad_real_W1 =  np.matmul(prev_layer,loss_deriv_)
 		grad_real_b1 = loss_deriv
-			
+		
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
-		loss_deriv = loss_deriv*lrelu(self.d_h0_l[idx], derivative=True)
-		prev_layer = np.expand_dims(real_input[idx], axis=-1)
-		loss_deriv_ = np.expand_dims(loss_deriv, axis=0)
-		grad_real_W0 = prev_layer.dot(loss_deriv_)
+		loss_deriv = loss_deriv*lrelu(self.d_h0_l, derivative=True)
+		prev_layer = np.expand_dims(real_input, axis=-1)
+		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
+		grad_real_W0 = np.matmul(prev_layer,loss_deriv_)
 		grad_real_b0 = loss_deriv 
 		
 		#######################################
 		#		fake input gradients
 		#		-log(1 - D(G(z)))
 		#######################################
-		loss_deriv = d_fake_loss[idx]*sigmoid(fake_logit[idx], derivative=True)
-		prev_layer = np.expand_dims(self.d_h0_a[idx], axis=-1)
-		loss_deriv_ = np.expand_dims(loss_deriv, axis=0)
-		grad_fake_W1 = prev_layer.dot(loss_deriv_)
+		loss_deriv = d_fake_loss*sigmoid(fake_logit, derivative=True)
+		prev_layer = np.expand_dims(self.d_h0_a, axis=-1)
+		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
+		grad_fake_W1 = np.matmul(prev_layer,loss_deriv_)
 		grad_fake_b1 = loss_deriv
 			
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
-		loss_deriv = loss_deriv*lrelu(self.d_h0_l[idx], derivative=True)
-		prev_layer = np.expand_dims(fake_input[idx], axis=-1)
-		loss_deriv_ = np.expand_dims(loss_deriv, axis=0)		
-		grad_fake_W0 = prev_layer.dot(loss_deriv_)
+		loss_deriv = loss_deriv*lrelu(self.d_h0_l, derivative=True)
+		prev_layer = np.expand_dims(fake_input, axis=-1)
+		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
+		grad_fake_W0 = np.matmul(prev_layer,loss_deriv_)
 		grad_fake_b0 = loss_deriv
 
 
@@ -267,12 +269,15 @@ class GAN(object):
 		d_b1_v_corrected = self.d_b1_v/(1-(self.beta2**self.timestep)+epsilon)
 
 	
-		# make updates
-		self.d_W0 = self.d_W0 - self.learning_rate*(d_w0_m_corrected/(np.sqrt(d_w0_v_corrected)+epsilon))
-		self.d_b0 = self.d_b0 - self.learning_rate*(d_b0_m_corrected/(np.sqrt(d_b0_v_corrected)+epsilon))
+		# calculated all the gradients in the batch
+		# now make updates
+		for idx in range(self.batch_size):
+			self.d_W0 = self.d_W0 - self.learning_rate*(d_w0_m_corrected[idx]/(np.sqrt(d_w0_v_corrected[idx])+epsilon))
+			self.d_b0 = self.d_b0 - self.learning_rate*(d_b0_m_corrected[idx]/(np.sqrt(d_b0_v_corrected[idx])+epsilon))
 
-		self.d_W1 = self.d_W1 - self.learning_rate*(d_w1_m_corrected/(np.sqrt(d_w1_v_corrected)+epsilon))
-		self.d_b1 = self.d_b1 - self.learning_rate*(d_b1_m_corrected/(np.sqrt(d_b1_v_corrected)+epsilon))
+			self.d_W1 = self.d_W1 - self.learning_rate*(d_w1_m_corrected[idx]/(np.sqrt(d_w1_v_corrected[idx])+epsilon))
+			self.d_b1 = self.d_b1 - self.learning_rate*(d_b1_m_corrected[idx]/(np.sqrt(d_b1_v_corrected[idx])+epsilon))
+
 
 
 	def train(self):
@@ -313,18 +318,18 @@ class GAN(object):
 				################################
 				# for every result in the batch
 				# calculate gradient and update the weights using Adam
-				for index in range(0,self.batch_size):					
-					# discriminator backward pass	
-					# one for fake input, another for real input
-					self.backprop_dis(d_real_logits, d_real_output, train_batch, d_fake_logits, d_fake_output, fake_img, index)
-					
-					# generator backward pass 
-					self.backprop_gen(d_fake_logits, d_fake_output, fake_img, index)
+							
+				# discriminator backward pass	
+				# one for fake input, another for real input
+				self.backprop_dis(d_real_logits, d_real_output, train_batch, d_fake_logits, d_fake_output, fake_img)
+				
+				# generator backward pass 
+				self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 
-					# train generator twice?
-					# g_logits, fake_img = self.generator(z)
-					# d_fake_logits, d_fake_output = self.discriminator(fake_img)
-					# self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
+				# train generator twice?
+				# g_logits, fake_img = self.generator(z)
+				# d_fake_logits, d_fake_output = self.discriminator(fake_img)
+				# self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 
 				#show res images as tile
 				img_tile(np.array(fake_img), self.img_path, epoch, idx, "res", False)

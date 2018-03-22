@@ -11,7 +11,9 @@ class GAN(object):
 		self.batch_size = 64
 		self.epochs = 500
 		self.timestep = 1
-		self.learning_rate = 0.0002
+		self.learning_rate = 0.001
+		self.decay = 0.01
+
 		self.beta1 = 0.9
 		self.beta2 = 0.999
 
@@ -25,7 +27,7 @@ class GAN(object):
 		self.g_W0 = np.random.randn(100,256).astype(np.float32) * np.sqrt(2.0/(100))
 		self.g_b0 = np.zeros(256).astype(np.float32)
 
-		self.g_W1 = np.random.randn(256,784).astype(np.float32) * np.sqrt(2.0/(128))
+		self.g_W1 = np.random.randn(256,784).astype(np.float32) * np.sqrt(2.0/(256))
 		self.g_b1 = np.zeros(784).astype(np.float32)
 
 		# init discriminator weights 
@@ -335,8 +337,11 @@ class GAN(object):
 				img_tile(np.array(fake_img), self.img_path, epoch, idx, "res", False)
 				self.img = fake_img
 
-				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f Real Ave.: %.4f Fake Ave.: %.4f"%(epoch, idx, np.mean(g_loss), np.mean(d_loss), np.mean(d_real_output), np.mean(d_fake_output))
+				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f Real Ave.: %.4f Fake Ave.: %.4f LR: %.6f"%(epoch, idx, np.mean(g_loss), np.mean(d_loss), np.mean(d_real_output), np.mean(d_fake_output), self.learning_rate)
 				self.timestep += 1
+
+		
+			self.learning_rate = self.learning_rate * (1.0/(1.0 + self.decay*epoch))
 
 			#save image result every epoch
 			img_tile(np.array(self.img), self.img_path, epoch, idx, "res", True)

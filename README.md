@@ -4,8 +4,8 @@ This is a very simple step by step implementation of GAN using only numpy.
 ### What you can find
 * Vanilla GAN
 * Xavier Initialization
-* Adam Optimizer
-* Instance Norm
+* SGD
+
 
 ### Prerequisites  
 * numpy  

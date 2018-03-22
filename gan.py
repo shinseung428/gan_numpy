@@ -22,10 +22,10 @@ class GAN(object):
 		# Xavier initialization is used to initialize the weights
 		# https://theneuralperspective.com/2016/11/11/weights-initialization/
 		# init generator weights
-		self.g_W0 = np.random.randn(100,128).astype(np.float32) * np.sqrt(2.0/(100))
-		self.g_b0 = np.zeros(128).astype(np.float32)
+		self.g_W0 = np.random.randn(100,256).astype(np.float32) * np.sqrt(2.0/(100))
+		self.g_b0 = np.zeros(256).astype(np.float32)
 
-		self.g_W1 = np.random.randn(128,784).astype(np.float32) * np.sqrt(2.0/(128))
+		self.g_W1 = np.random.randn(256,784).astype(np.float32) * np.sqrt(2.0/(128))
 		self.g_b1 = np.zeros(784).astype(np.float32)
 
 		# init discriminator weights 
@@ -60,8 +60,9 @@ class GAN(object):
 		self.d_input = np.reshape(img, (self.batch_size,-1))
 
 		self.d_h0_l = self.d_input.dot(self.d_W0) + self.d_b0
-		self.d_h0_l = instance_norm(self.d_h0_l)
-		self.d_h0_a = lrelu(self.d_h0_l)
+		self.d_h0_a = relu(self.d_h0_l)
+		# self.d_h0_a = instance_norm(self.d_h0_a)
+		
 
 		self.d_h1_l = self.d_h0_a.dot(self.d_W1) + self.d_b1
 		self.d_h1_a = sigmoid(self.d_h1_l)
@@ -76,8 +77,8 @@ class GAN(object):
 		self.z = np.reshape(z, (self.batch_size, -1))
 
 		self.g_h0_l = self.z.dot(self.g_W0) + self.g_b0
-		self.g_h0_l = instance_norm(self.g_h0_l)
-		self.g_h0_a = lrelu(self.g_h0_l)
+		self.g_h0_a = relu(self.g_h0_l)
+		# self.g_h0_a = instance_norm(self.g_h0_a)
 
 		self.g_h1_l = self.g_h0_a.dot(self.g_W1) + self.g_b1
 		self.g_h1_a = tanh(self.g_h1_l)
@@ -108,7 +109,7 @@ class GAN(object):
 		# we calculate them but won't update the discriminator weights
 		loss_deriv = g_loss*sigmoid(fake_logit, derivative=True)
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
-		loss_deriv = loss_deriv*lrelu(self.d_h0_l, derivative=True)		
+		loss_deriv = loss_deriv*relu(self.d_h0_l, derivative=True)		
 		
 		loss_deriv = loss_deriv.dot(self.d_W0.T)
 		loss_deriv = loss_deriv*tanh(self.g_h1_l, derivative=True)
@@ -125,7 +126,7 @@ class GAN(object):
 		grad_b1 = loss_deriv
 
 		loss_deriv = loss_deriv.dot(self.g_W1.T)
-		loss_deriv = loss_deriv*lrelu(self.g_h0_l, derivative=True)
+		loss_deriv = loss_deriv*relu(self.g_h0_l, derivative=True)
 		prev_layer = np.expand_dims(self.z, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_W0 = np.matmul(prev_layer,loss_deriv_)
@@ -166,11 +167,11 @@ class GAN(object):
 		# calculated all the gradients in the batch 
 		# now make updates
 		for idx in range(self.batch_size):
-			self.g_W0 = self.g_W0 - self.learning_rate*(g_w0_m_corrected[idx]/(np.sqrt(g_w0_v_corrected[idx])+epsilon))
-			self.g_b0 = self.g_b0 - self.learning_rate*(g_b0_m_corrected[idx]/(np.sqrt(g_b0_v_corrected[idx])+epsilon))
+			self.g_W0 = self.g_W0 - self.learning_rate*grad_W0[idx]#(g_w0_m_corrected[idx]/(np.sqrt(g_w0_v_corrected[idx])+epsilon))
+			self.g_b0 = self.g_b0 - self.learning_rate*grad_b0[idx]#(g_b0_m_corrected[idx]/(np.sqrt(g_b0_v_corrected[idx])+epsilon))
 
-			self.g_W1 = self.g_W1 - self.learning_rate*(g_w1_m_corrected[idx]/(np.sqrt(g_w1_v_corrected[idx])+epsilon))
-			self.g_b1 = self.g_b1 - self.learning_rate*(g_b1_m_corrected[idx]/(np.sqrt(g_b1_v_corrected[idx])+epsilon))
+			self.g_W1 = self.g_W1 - self.learning_rate*grad_W1[idx]#(g_w1_m_corrected[idx]/(np.sqrt(g_w1_v_corrected[idx])+epsilon))
+			self.g_b1 = self.g_b1 - self.learning_rate*grad_b1[idx]#(g_b1_m_corrected[idx]/(np.sqrt(g_b1_v_corrected[idx])+epsilon))
 
 
 	# discriminator backpropagation
@@ -205,7 +206,7 @@ class GAN(object):
 		grad_real_b1 = loss_deriv
 		
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
-		loss_deriv = loss_deriv*lrelu(self.d_h0_l, derivative=True)
+		loss_deriv = loss_deriv*relu(self.d_h0_l, derivative=True)
 		prev_layer = np.expand_dims(real_input, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_real_W0 = np.matmul(prev_layer,loss_deriv_)
@@ -222,7 +223,7 @@ class GAN(object):
 		grad_fake_b1 = loss_deriv
 			
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
-		loss_deriv = loss_deriv*lrelu(self.d_h0_l, derivative=True)
+		loss_deriv = loss_deriv*relu(self.d_h0_l, derivative=True)
 		prev_layer = np.expand_dims(fake_input, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_fake_W0 = np.matmul(prev_layer,loss_deriv_)
@@ -272,11 +273,11 @@ class GAN(object):
 		# calculated all the gradients in the batch
 		# now make updates
 		for idx in range(self.batch_size):
-			self.d_W0 = self.d_W0 - self.learning_rate*(d_w0_m_corrected[idx]/(np.sqrt(d_w0_v_corrected[idx])+epsilon))
-			self.d_b0 = self.d_b0 - self.learning_rate*(d_b0_m_corrected[idx]/(np.sqrt(d_b0_v_corrected[idx])+epsilon))
+			self.d_W0 = self.d_W0 - self.learning_rate*grad_W0[idx]#(d_w0_m_corrected[idx]/(np.sqrt(d_w0_v_corrected[idx])+epsilon))
+			self.d_b0 = self.d_b0 - self.learning_rate*grad_b0[idx]#(d_b0_m_corrected[idx]/(np.sqrt(d_b0_v_corrected[idx])+epsilon))
 
-			self.d_W1 = self.d_W1 - self.learning_rate*(d_w1_m_corrected[idx]/(np.sqrt(d_w1_v_corrected[idx])+epsilon))
-			self.d_b1 = self.d_b1 - self.learning_rate*(d_b1_m_corrected[idx]/(np.sqrt(d_b1_v_corrected[idx])+epsilon))
+			self.d_W1 = self.d_W1 - self.learning_rate*grad_W1[idx]#(d_w1_m_corrected[idx]/(np.sqrt(d_w1_v_corrected[idx])+epsilon))
+			self.d_b1 = self.d_b1 - self.learning_rate*grad_b1[idx]#(d_b1_m_corrected[idx]/(np.sqrt(d_b1_v_corrected[idx])+epsilon))
 
 
 
@@ -325,11 +326,10 @@ class GAN(object):
 				
 				# generator backward pass 
 				self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
-
 				# train generator twice?
-				# g_logits, fake_img = self.generator(z)
-				# d_fake_logits, d_fake_output = self.discriminator(fake_img)
-				# self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
+				g_logits, fake_img = self.generator(z)
+				d_fake_logits, d_fake_output = self.discriminator(fake_img)
+				self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 
 				#show res images as tile
 				img_tile(np.array(fake_img), self.img_path, epoch, idx, "res", False)

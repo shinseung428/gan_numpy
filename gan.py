@@ -137,7 +137,7 @@ class GAN(object):
 		real_input = np.reshape(real_input, (self.batch_size,-1))
 		fake_input = np.reshape(fake_input, (self.batch_size,-1))
 
-		# Discriminator loss = -np.mean(log(D(x)) - log(1-D(G(z)))) 
+		# Discriminator loss = -np.mean(log(D(x)) + log(1-D(G(z)))) 
 		# Calculate gradients of the loss
 		d_real_loss = -1.0/(real_output + epsilon)
 		d_fake_loss = -1.0/(fake_output - 1.0 + epsilon)

@@ -223,7 +223,7 @@ class GAN(object):
 
 				# cross entropy loss using sigmoid output
 				# add epsilon to avoid overflow
-				# maximize Discriminator loss = -np.mean(log(D(x)) - log(1-D(G(z))))
+				# maximize Discriminator loss = -np.mean(log(D(x)) + log(1-D(G(z))))
 				d_loss = -np.log(d_real_output+epsilon) - np.log(1 - d_fake_output+epsilon)
 				
 				# Generator loss 

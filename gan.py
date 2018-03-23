@@ -14,7 +14,7 @@ class GAN(object):
 		self.learning_rate = 0.001
 		self.decay = 0.001
 
-		self.img_path = "./images2"
+		self.img_path = "./images"
 		if not os.path.exists(self.img_path):
 			os.makedirs(self.img_path)
 
@@ -115,11 +115,11 @@ class GAN(object):
 		# calculated all the gradients in the batch 
 		# now make updates
 		for idx in range(self.batch_size):
-			self.g_W0 = self.g_W0 - self.learning_rate*grad_W0[idx]#(g_w0_m_corrected[idx]/(np.sqrt(g_w0_v_corrected[idx])+epsilon))
-			self.g_b0 = self.g_b0 - self.learning_rate*grad_b0[idx]#(g_b0_m_corrected[idx]/(np.sqrt(g_b0_v_corrected[idx])+epsilon))
+			self.g_W0 = self.g_W0 - self.learning_rate*grad_W0[idx]
+			self.g_b0 = self.g_b0 - self.learning_rate*grad_b0[idx]
 
-			self.g_W1 = self.g_W1 - self.learning_rate*grad_W1[idx]#(g_w1_m_corrected[idx]/(np.sqrt(g_w1_v_corrected[idx])+epsilon))
-			self.g_b1 = self.g_b1 - self.learning_rate*grad_b1[idx]#(g_b1_m_corrected[idx]/(np.sqrt(g_b1_v_corrected[idx])+epsilon))
+			self.g_W1 = self.g_W1 - self.learning_rate*grad_W1[idx]
+			self.g_b1 = self.g_b1 - self.learning_rate*grad_b1[idx]
 
 
 	# discriminator backpropagation
@@ -256,7 +256,7 @@ class GAN(object):
 
 				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f Real Ave.: %.4f Fake Ave.: %.4f lr: %.4f"%(epoch, idx, np.mean(g_loss), np.mean(d_loss), np.mean(d_real_output), np.mean(d_fake_output), self.learning_rate)
 
-		
+			#update learning rate every epoch
 			self.learning_rate = self.learning_rate * (1.0/(1.0 + self.decay*epoch))
 
 			#save image result every epoch
@@ -268,7 +268,8 @@ class GAN(object):
 ########################
 #program starts here
 #select numbers to generate
-numbers = [2]
+#recommended to put a single number to get faster result
+numbers = [1]
 
 gan = GAN(numbers)
 gan.train()	

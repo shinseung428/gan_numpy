@@ -86,14 +86,21 @@ def img_tile(imgs, path, epoch, step, name, save, aspect_ratio=1.0, tile_shape=N
 			tile_img[yoff:yoff+img_shape[0], xoff:xoff+img_shape[1], ...] = img 
 
 
+	path_name = path + "/epoch_%03d"%(epoch)+".jpg"
+
+	##########################################
+	# Change code below if you want to save results using PIL
+	##########################################
 	tile_img = cv2.resize(tile_img, (256,256))
 	cv2.imshow(name, tile_img)
 	cv2.waitKey(1)
-	
-	if save:
-		cv2.imwrite(path + "/epoch_%03d"%(epoch)+".jpg", tile_img*255)
+	if save:	
+		cv2.imwrite(path_name, tile_img*255)
 
-def mnist_reader():
+
+
+
+def mnist_reader(numbers):
 	def one_hot(label, output_dim):
 		one_hot = np.zeros((len(label), output_dim))
 		
@@ -112,9 +119,13 @@ def mnist_reader():
 	f = open('./data/train-labels.idx1-ubyte')
 	loaded = np.fromfile(file=f, dtype=np.uint8)
 	trainY = loaded[8:].reshape((60000)).astype(np.int32)
-	trainY = one_hot(trainY, 10)
 
-	return trainX, trainY, len(trainX) 
+	newtrainX = []
+	for idx in range(0,len(trainX)):
+		if trainY[idx] in numbers:
+			newtrainX.append(trainX[idx])
+
+	return np.array(newtrainX), trainY, len(trainX) 
 
 
 

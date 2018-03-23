@@ -6,28 +6,26 @@ from utils import *
 
 epsilon = 10e-8
 class GAN(object):
+	def __init__(self, numbers):
+		self.numbers = numbers
 
-	def __init__(self):
+		self.epochs = 100
 		self.batch_size = 64
-		self.epochs = 500
-		self.timestep = 1
 		self.learning_rate = 0.001
-		self.decay = 0.01
+		self.decay = 0.001
 
-		self.beta1 = 0.9
-		self.beta2 = 0.999
-
-		self.img_path = "./images"
+		self.img_path = "./images2"
 		if not os.path.exists(self.img_path):
 			os.makedirs(self.img_path)
+
 
 		# Xavier initialization is used to initialize the weights
 		# https://theneuralperspective.com/2016/11/11/weights-initialization/
 		# init generator weights
-		self.g_W0 = np.random.randn(100,256).astype(np.float32) * np.sqrt(2.0/(100))
-		self.g_b0 = np.zeros(256).astype(np.float32)
+		self.g_W0 = np.random.randn(100,128).astype(np.float32) * np.sqrt(2.0/(100))
+		self.g_b0 = np.zeros(128).astype(np.float32)
 
-		self.g_W1 = np.random.randn(256,784).astype(np.float32) * np.sqrt(2.0/(256))
+		self.g_W1 = np.random.randn(128,784).astype(np.float32) * np.sqrt(2.0/(128))
 		self.g_b1 = np.zeros(784).astype(np.float32)
 
 		# init discriminator weights 
@@ -36,24 +34,6 @@ class GAN(object):
 
 		self.d_W1 = np.random.randn(128,1).astype(np.float32) * np.sqrt(2.0/(128))
 		self.d_b1 = np.zeros(1).astype(np.float32)
-		
-
-		# Adam Optimizer Vars for the Discriminator
-		# d_W0 and d_b0 
-		self.d_w0_m, self.d_w0_v = 0.0, 0.0
-		self.d_b0_m, self.d_b0_v = 0.0, 0.0
-		# W1 and b1
-		self.d_w1_m, self.d_w1_v = 0.0, 0.0
-		self.d_b1_m, self.d_b1_v = 0.0, 0.0
-
-
-		#Adam Optimizer Vars for the Generator
-		# g_W0 and g_b0
-		self.g_w0_m, self.g_w0_v = 0.0, 0.0
-		self.g_b0_m, self.g_b0_v = 0.0, 0.0
-		# g_W1 and g_b1
-		self.g_w1_m, self.g_w1_v = 0.0, 0.0
-		self.g_b1_m, self.g_b1_v = 0.0, 0.0
 
 	def discriminator(self, img):
 		#self.d_h{num}_l : hidden logit layer
@@ -62,10 +42,9 @@ class GAN(object):
 		self.d_input = np.reshape(img, (self.batch_size,-1))
 
 		self.d_h0_l = self.d_input.dot(self.d_W0) + self.d_b0
-		self.d_h0_a = relu(self.d_h0_l)
-		# self.d_h0_a = instance_norm(self.d_h0_a)
+		self.d_h0_1 = instance_norm(self.d_h0_l)
+		self.d_h0_a = lrelu(self.d_h0_l)
 		
-
 		self.d_h1_l = self.d_h0_a.dot(self.d_W1) + self.d_b1
 		self.d_h1_a = sigmoid(self.d_h1_l)
 		self.d_out = self.d_h1_a
@@ -79,8 +58,8 @@ class GAN(object):
 		self.z = np.reshape(z, (self.batch_size, -1))
 
 		self.g_h0_l = self.z.dot(self.g_W0) + self.g_b0
-		self.g_h0_a = relu(self.g_h0_l)
-		# self.g_h0_a = instance_norm(self.g_h0_a)
+		self.g_h0_l = instance_norm(self.g_h0_l)
+		self.g_h0_a = lrelu(self.g_h0_l)
 
 		self.g_h1_l = self.g_h0_a.dot(self.g_W1) + self.g_b1
 		self.g_h1_a = tanh(self.g_h1_l)
@@ -99,7 +78,6 @@ class GAN(object):
 		# fake_logit : logit output from the discriminator D(G(z))
 		# fake_output : sigmoid output from the discriminator D(G(z))
 		
-
 		# flatten fake image input
 		fake_input = np.reshape(fake_input, (self.batch_size,-1))
 
@@ -111,10 +89,9 @@ class GAN(object):
 		# we calculate them but won't update the discriminator weights
 		loss_deriv = g_loss*sigmoid(fake_logit, derivative=True)
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
-		loss_deriv = loss_deriv*relu(self.d_h0_l, derivative=True)		
-		
+
+		loss_deriv = loss_deriv*lrelu(self.d_h0_l, derivative=True)		
 		loss_deriv = loss_deriv.dot(self.d_W0.T)
-		loss_deriv = loss_deriv*tanh(self.g_h1_l, derivative=True)
 		# Reached the end of the generator
 
 		# Calculate generator gradients
@@ -122,49 +99,18 @@ class GAN(object):
 		#		fake input gradients
 		#		-log(D(G(z)))
 		#######################################
+		loss_deriv = loss_deriv*tanh(self.g_h1_l, derivative=True)
 		prev_layer = np.expand_dims(self.g_h0_a, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_W1 = np.matmul(prev_layer,loss_deriv_)
 		grad_b1 = loss_deriv
 
 		loss_deriv = loss_deriv.dot(self.g_W1.T)
-		loss_deriv = loss_deriv*relu(self.g_h0_l, derivative=True)
+		loss_deriv = loss_deriv*lrelu(self.g_h0_l, derivative=True)
 		prev_layer = np.expand_dims(self.z, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_W0 = np.matmul(prev_layer,loss_deriv_)
 		grad_b0 = loss_deriv
-
-
-		# update weights using Adam Optimizer
-		# https://wiseodd.github.io/techblog/2016/06/22/nn-optimization/
-		# g_W0
-		self.g_w0_m = (self.beta1 * self.g_w0_m) + (1.0 - self.beta1) * grad_W0
-		self.g_w0_v = (self.beta2 * self.g_w0_v) + (1.0 - self.beta2) * (grad_W0 ** 2)
-		# g_b0
-		self.g_b0_m = (self.beta1 * self.g_b0_m) + (1.0 - self.beta1) * grad_b0
-		self.g_b0_v = (self.beta2 * self.g_b0_v) + (1.0 - self.beta2) * (grad_b0 ** 2)
-
-		# g_W1
-		self.g_w1_m = (self.beta1 * self.g_w1_m) + (1.0 - self.beta1) * grad_W1
-		self.g_w1_v = (self.beta2 * self.g_w1_v) + (1.0 - self.beta2) * (grad_W1 ** 2)
-		# g_b1
-		self.g_b1_m = (self.beta1 * self.g_b1_m) + (1.0 - self.beta1) * grad_b1
-		self.g_b1_v = (self.beta2 * self.g_b1_v) + (1.0 - self.beta2) * (grad_b1 ** 2)
-
-		# corrected
-		# g_W0
-		g_w0_m_corrected = self.g_w0_m/(1-(self.beta1**self.timestep)+epsilon)
-		g_w0_v_corrected = self.g_w0_v/(1-(self.beta2**self.timestep)+epsilon)
-		# g_b0
-		g_b0_m_corrected = self.g_b0_m/(1-(self.beta1**self.timestep)+epsilon)
-		g_b0_v_corrected = self.g_b0_v/(1-(self.beta2**self.timestep)+epsilon)
-
-		# g_W1
-		g_w1_m_corrected = self.g_w1_m/(1-(self.beta1**self.timestep)+epsilon)
-		g_w1_v_corrected = self.g_w1_v/(1-(self.beta2**self.timestep)+epsilon)
-		# g_b1
-		g_b1_m_corrected = self.g_b1_m/(1-(self.beta1**self.timestep)+epsilon)
-		g_b1_v_corrected = self.g_b1_v/(1-(self.beta2**self.timestep)+epsilon)
 
 		# calculated all the gradients in the batch 
 		# now make updates
@@ -208,7 +154,7 @@ class GAN(object):
 		grad_real_b1 = loss_deriv
 		
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
-		loss_deriv = loss_deriv*relu(self.d_h0_l, derivative=True)
+		loss_deriv = loss_deriv*lrelu(self.d_h0_l, derivative=True)
 		prev_layer = np.expand_dims(real_input, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_real_W0 = np.matmul(prev_layer,loss_deriv_)
@@ -225,7 +171,7 @@ class GAN(object):
 		grad_fake_b1 = loss_deriv
 			
 		loss_deriv = loss_deriv.dot(self.d_W1.T)
-		loss_deriv = loss_deriv*relu(self.d_h0_l, derivative=True)
+		loss_deriv = loss_deriv*lrelu(self.d_h0_l, derivative=True)
 		prev_layer = np.expand_dims(fake_input, axis=-1)
 		loss_deriv_ = np.expand_dims(loss_deriv, axis=1)
 		grad_fake_W0 = np.matmul(prev_layer,loss_deriv_)
@@ -238,55 +184,21 @@ class GAN(object):
 
 		grad_W0 = grad_real_W0 + grad_fake_W0
 		grad_b0 = grad_real_b0 + grad_fake_b0
-
-
-		# update weights using Adam Optimizer
-		# https://wiseodd.github.io/techblog/2016/06/22/nn-optimization/
-		# d_W0
-		self.d_w0_m = (self.beta1 * self.d_w0_m) + (1.0 - self.beta1) * grad_W0
-		self.d_w0_v = (self.beta2 * self.d_w0_v) + (1.0 - self.beta2) * (grad_W0 ** 2)
-		# d_b0
-		self.d_b0_m = (self.beta1 * self.d_b0_m) + (1.0 - self.beta1) * grad_b0
-		self.d_b0_v = (self.beta2 * self.d_b0_v) + (1.0 - self.beta2) * (grad_b0 ** 2)
-
-		# d_W1
-		self.d_w1_m = (self.beta1 * self.d_w1_m) + (1.0 - self.beta1) * grad_W1
-		self.d_w1_v = (self.beta2 * self.d_w1_v) + (1.0 - self.beta2) * (grad_W1 ** 2)
-		# d_b1
-		self.d_b1_m = (self.beta1 * self.d_b1_m) + (1.0 - self.beta1) * grad_b1
-		self.d_b1_v = (self.beta2 * self.d_b1_v) + (1.0 - self.beta2) * (grad_b1 ** 2)
-
-		# corrected
-		# g_W0
-		d_w0_m_corrected = self.d_w0_m/(1-(self.beta1**self.timestep)+epsilon)
-		d_w0_v_corrected = self.d_w0_v/(1-(self.beta2**self.timestep)+epsilon)
-		# g_b0
-		d_b0_m_corrected = self.d_b0_m/(1-(self.beta1**self.timestep)+epsilon)
-		d_b0_v_corrected = self.d_b0_v/(1-(self.beta2**self.timestep)+epsilon)
-
-		# g_W1
-		d_w1_m_corrected = self.d_w1_m/(1-(self.beta1**self.timestep)+epsilon)
-		d_w1_v_corrected = self.d_w1_v/(1-(self.beta2**self.timestep)+epsilon)
-		# g_b1
-		d_b1_m_corrected = self.d_b1_m/(1-(self.beta1**self.timestep)+epsilon)
-		d_b1_v_corrected = self.d_b1_v/(1-(self.beta2**self.timestep)+epsilon)
-
 	
 		# calculated all the gradients in the batch
 		# now make updates
 		for idx in range(self.batch_size):
-			self.d_W0 = self.d_W0 - self.learning_rate*grad_W0[idx]#(d_w0_m_corrected[idx]/(np.sqrt(d_w0_v_corrected[idx])+epsilon))
-			self.d_b0 = self.d_b0 - self.learning_rate*grad_b0[idx]#(d_b0_m_corrected[idx]/(np.sqrt(d_b0_v_corrected[idx])+epsilon))
+			self.d_W0 = self.d_W0 - self.learning_rate*grad_W0[idx]
+			self.d_b0 = self.d_b0 - self.learning_rate*grad_b0[idx]
 
-			self.d_W1 = self.d_W1 - self.learning_rate*grad_W1[idx]#(d_w1_m_corrected[idx]/(np.sqrt(d_w1_v_corrected[idx])+epsilon))
-			self.d_b1 = self.d_b1 - self.learning_rate*grad_b1[idx]#(d_b1_m_corrected[idx]/(np.sqrt(d_b1_v_corrected[idx])+epsilon))
-
+			self.d_W1 = self.d_W1 - self.learning_rate*grad_W1[idx]
+			self.d_b1 = self.d_b1 - self.learning_rate*grad_b1[idx]
 
 
 	def train(self):
 		#we don't need labels.
 		#just read images and shuffle
-		trainX, _, train_size = mnist_reader()
+		trainX, _, train_size = mnist_reader(self.numbers)
 		np.random.shuffle(trainX)
 
 		#set batch indices
@@ -295,6 +207,10 @@ class GAN(object):
 			for idx in range(batch_idx):
 				# prepare batch and input vector z
 				train_batch = trainX[idx*self.batch_size:idx*self.batch_size + self.batch_size]
+				#ignore batch if there are insufficient elements 
+				if train_batch.shape[0] != self.batch_size:
+					break
+
 				z = np.random.uniform(-1,1,[self.batch_size,100])
 
 				################################
@@ -329,16 +245,16 @@ class GAN(object):
 				# generator backward pass 
 				self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 				# train generator twice?
-				g_logits, fake_img = self.generator(z)
-				d_fake_logits, d_fake_output = self.discriminator(fake_img)
-				self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
+				#g_logits, fake_img = self.generator(z)
+				#d_fake_logits, d_fake_output = self.discriminator(fake_img)
+				#self.backprop_gen(d_fake_logits, d_fake_output, fake_img)
 
 				#show res images as tile
+				#if you don't want to see the result at every step, comment line below
 				img_tile(np.array(fake_img), self.img_path, epoch, idx, "res", False)
 				self.img = fake_img
 
-				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f Real Ave.: %.4f Fake Ave.: %.4f LR: %.6f"%(epoch, idx, np.mean(g_loss), np.mean(d_loss), np.mean(d_real_output), np.mean(d_fake_output), self.learning_rate)
-				self.timestep += 1
+				print "Epoch [%d] Step [%d] G Loss:%.4f D Loss:%.4f Real Ave.: %.4f Fake Ave.: %.4f lr: %.4f"%(epoch, idx, np.mean(g_loss), np.mean(d_loss), np.mean(d_real_output), np.mean(d_fake_output), self.learning_rate)
 
 		
 			self.learning_rate = self.learning_rate * (1.0/(1.0 + self.decay*epoch))
@@ -349,7 +265,10 @@ class GAN(object):
 
 
 
+########################
+#program starts here
+#select numbers to generate
+numbers = [2]
 
-
-gan = GAN()
+gan = GAN(numbers)
 gan.train()	

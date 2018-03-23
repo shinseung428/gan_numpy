@@ -1,7 +1,7 @@
 # GAN in Numpy
 This is a very simple step by step implementation of GAN using only numpy.  
 Without the use of GPU, it takes too much time to generate all the numbers.  
-Therefore, to see the result quickly using only CPU, I suggest working with one number in MNIST dataset.  
+To get the result quickly using only CPU, I suggest working with one number.  
 
 ### What you can find
 * Vanilla GAN
@@ -9,7 +9,7 @@ Therefore, to see the result quickly using only CPU, I suggest working with one 
 * Instance Norm
 * SGD
 
-### Prerequisites  
+### Requirements  
 * Numpy  
 * Opencv/PIL (to visualize/save results)  
 

@@ -37,15 +37,6 @@ def tanh(input, derivative=False):
 
 ##############################################################################
 
-def instance_norm(input):
-    epsilon = 1e-9
-    
-    mean = np.mean(input, axis=0)
-    var = np.var(input, axis=0)
-
-    return (input - mean)/np.sqrt(var + epsilon)
-
-
 def img_tile(imgs, path, epoch, step, name, save, aspect_ratio=1.0, tile_shape=None, border=1, border_color=0):
 	if imgs.ndim != 3 and imgs.ndim != 4:
 		raise ValueError('imgs has wrong number of dimensions.')

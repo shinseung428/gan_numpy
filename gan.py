@@ -42,7 +42,6 @@ class GAN(object):
 		self.d_input = np.reshape(img, (self.batch_size,-1))
 
 		self.d_h0_l = self.d_input.dot(self.d_W0) + self.d_b0
-		self.d_h0_1 = instance_norm(self.d_h0_l)
 		self.d_h0_a = lrelu(self.d_h0_l)
 		
 		self.d_h1_l = self.d_h0_a.dot(self.d_W1) + self.d_b1
@@ -58,7 +57,6 @@ class GAN(object):
 		self.z = np.reshape(z, (self.batch_size, -1))
 
 		self.g_h0_l = self.z.dot(self.g_W0) + self.g_b0
-		self.g_h0_l = instance_norm(self.g_h0_l)
 		self.g_h0_a = lrelu(self.g_h0_l)
 
 		self.g_h1_l = self.g_h0_a.dot(self.g_W1) + self.g_b1

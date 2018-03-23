@@ -6,7 +6,6 @@ To get the result quickly using only CPU, I suggest working with one number.
 ### What you can find
 * Vanilla GAN
 * Xavier Initialization
-* Instance Norm
 * SGD
 
 ### Requirements  

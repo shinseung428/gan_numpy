@@ -2,11 +2,18 @@ import numpy as np
 from PIL import Image
 import cv2
 
+try:
+    import cupy as cp
+    use_cupy = cp.cuda.is_available()
+except Exception as E:
+    use_cupy = False
+
 ####################################
 #        Activation Functions
 ####################################
 def sigmoid(input, derivative=False):
-    res = 1/(1+np.exp(-input))
+    xp = get_module(input)
+    res = 1/(1+xp.exp(-input))
     if derivative:
         return res*(1-res)
     return res
@@ -21,18 +28,20 @@ def relu(input, derivative=False):
     
 
 def lrelu(input, alpha=0.01, derivative=False):
+    xp = get_module(input)
     res = input
     if derivative:
-        dx = np.ones_like(res)
+        dx = xp.ones_like(res)
         dx[res < 0] = alpha
         return dx
     else:
-        return np.maximum(input, input*alpha, input)
+        return xp.maximum(input, input*alpha, input)
 
 def tanh(input, derivative=False):
-    res = np.tanh(input)
+    xp = get_module(input)
+    res = xp.tanh(input)
     if derivative:
-        return 1.0 - np.tanh(input) ** 2
+        return 1.0 - xp.tanh(input) ** 2
     return res
 
 ##############################################################################
@@ -83,8 +92,8 @@ def img_tile(imgs, path, epoch, step, name, save, aspect_ratio=1.0, tile_shape=N
     # Change code below if you want to save results using PIL
     ##########################################
     tile_img = cv2.resize(tile_img, (256,256))
-    #cv2.imshow(name, tile_img)
-    #cv2.waitKey(1)
+    cv2.imshow(name, tile_img)
+    cv2.waitKey(1)
     if save:    
         cv2.imwrite(path_name, tile_img*255)
 
@@ -118,13 +127,20 @@ def mnist_reader(numbers):
 
     return np.array(newtrainX), trainY, len(trainX) 
 
+def cupy_if_avail(np_array):
+    if use_cupy:
+        return cp.asarray(np_array)
+    else:
+        return np_array
 
+def get_module(x_array):
+    if use_cupy:
+        return cp.get_array_module(x_array)
+    else:
+        return np
 
-
-
-
-
-
-
-
-
+def to_numpy(xp_array):
+    if use_cupy:
+        return cp.asnumpy(xp_array)
+    else:
+        return xp_array

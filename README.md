@@ -11,7 +11,7 @@ To get the result quickly using only CPU, I suggest working with one number.
 ### Requirements  
 * Numpy  
 * Opencv/PIL (to visualize/save results)  
-
+* cupy (optional, to leverage gpu for matrix computations)
 ## Network  
 ![network](./results/network.png)
 

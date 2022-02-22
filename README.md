@@ -24,4 +24,4 @@ To get the result quickly using only CPU, I suggest working with one number.
 ![9](./results/9.gif)
 
 ## Author  
-Seung Shin / [@shinseung428](http://shinseung428.github.io)
+Seung Shin
